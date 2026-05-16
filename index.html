@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pest Proof — Job Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0d14;--bg2:#111827;--bg3:#1e2535;--bg4:#252d3d;--ac:#16a34a;--blue:#2563eb;--red:#dc2626;--amber:#d97706;--purple:#7c3aed;--bd:rgba(255,255,255,0.07);--txt:#f1f5f9;--muted:rgba(241,245,249,0.45);--sb:240px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;}
+input,select,textarea,button{font-family:inherit;font-size:14px;-webkit-appearance:none;}
+
+/* LAYOUT */
+.sb{position:fixed;top:0;left:0;bottom:0;width:var(--sb);background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:200;transition:transform .25s;}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199;}
+.sb-overlay.show{display:block;}
+@media(max-width:960px){.sb{transform:translateX(calc(-1 * var(--sb)));}.sb.show{transform:translateX(0);}.main{margin-left:0!important;}}
+.main{margin-left:var(--sb);}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--bd);height:52px;display:flex;align-items:center;gap:8px;padding:0 16px;position:sticky;top:0;z-index:100;}
+.tb-title{font-size:14px;font-weight:600;flex:1;}
+.content{padding:16px;}
+
+/* SIDEBAR */
+.sb-brand{padding:16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;}
+.sb-mark{width:32px;height:32px;background:var(--ac);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;}
+.sb-name{font-size:13px;font-weight:700;}
+.sb-role{font-size:10px;color:var(--muted);}
+.sb-body{flex:1;overflow-y:auto;padding:8px;}
+.sb-sec{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:10px 8px 4px;}
+.nv{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px;}
+.nv:hover{background:rgba(255,255,255,.05);color:var(--txt);}
+.nv.on{background:rgba(22,163,74,.15);color:var(--ac);}
+.nv .ic{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nv-badge{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--red);color:#fff;}
+
+/* PANELS */
+.panel{display:none;}.panel.on{display:block;}
+
+/* BUTTONS */
+.btn{padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;transition:all .15s;}
+.btn-g{background:var(--ac);color:#fff;}
+.btn-g:hover{background:#15803d;}
+.btn-gr{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid var(--bd);}
+.btn-gr:hover{background:rgba(255,255,255,.12);}
+.btn-b{background:var(--blue);color:#fff;}
+.btn-r{background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.25);}
+.btn-a{background:rgba(217,119,6,.15);color:#fbbf24;border:1px solid rgba(217,119,6,.25);}
+.btn-p{background:rgba(124,58,237,.15);color:#c084fc;border:1px solid rgba(124,58,237,.25);}
+.btn-sm{padding:5px 9px;font-size:11px;border-radius:6px;}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+.sc{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.sc.g::before{background:var(--ac);}.sc.b::before{background:var(--blue);}.sc.a::before{background:var(--amber);}.sc.r::before{background:var(--red);}
+.sc-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.sc-v{font-size:22px;font-weight:700;}
+.sc.g .sc-v{color:var(--ac);}.sc.b .sc-v{color:#60a5fa;}.sc.a .sc-v{color:#fbbf24;}.sc.r .sc-v{color:#f87171;}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.week-label{flex:1;text-align:center;font-size:13px;font-weight:600;}
+.week-arrow{padding:7px 12px;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:7px;color:var(--txt);cursor:pointer;font-size:13px;}
+.week-arrow:hover{background:rgba(255,255,255,.1);}
+
+/* ALERT BANNER */
+.alert-banner{background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;margin-bottom:12px;line-height:1.8;display:none;}
+
+/* TECH BOARDS - new collapsible layout */
+.tech-board{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.tech-board-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;transition:background .15s;}
+.tech-board-hdr:hover{background:rgba(255,255,255,.03);}
+.tech-av{width:38px;height:38px;border-radius:50%;background:rgba(22,163,74,.2);color:#4ade80;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tech-hdr-info{flex:1;}
+.tech-hdr-name{font-size:14px;font-weight:700;}
+.tech-hdr-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.tech-hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.tech-hours{font-size:16px;font-weight:700;color:var(--ac);}
+.tech-chevron{font-size:14px;color:var(--muted);transition:transform .2s;}
+.tech-chevron.open{transform:rotate(180deg);}
+.tech-body{display:none;border-top:1px solid var(--bd);}
+.tech-body.open{display:block;}
+.tech-actions-bar{display:flex;gap:8px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd);flex-wrap:wrap;}
+
+/* PROGRESS BAR */
+.prog-bar{height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin:4px 0 0;}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+.prog-ok{background:var(--ac);}.prog-warn{background:var(--amber);}.prog-over{background:var(--red);}
+
+/* DAY GROUP */
+.day-group{border-bottom:1px solid var(--bd);}
+.day-group:last-child{border-bottom:none;}
+.day-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 6px;background:rgba(255,255,255,.02);}
+.day-name{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.day-meta{display:flex;align-items:center;gap:8px;}
+.day-count{font-size:11px;color:var(--ac);font-weight:600;}
+.day-add{padding:3px 8px;font-size:10px;font-weight:700;border-radius:5px;background:rgba(22,163,74,.12);color:var(--ac);border:1px solid rgba(22,163,74,.2);cursor:pointer;}
+.day-add:hover{background:rgba(22,163,74,.2);}
+
+/* JOB ROWS */
+.job-row{display:flex;align-items:center;gap:10px;padding:8px 14px;transition:background .15s;cursor:pointer;}
+.job-row:hover{background:rgba(255,255,255,.03);}
+.job-row.confirmed{border-left:3px solid var(--amber);}
+.job-row.lunch{cursor:default;opacity:0.5;}
+.job-row.lunch:hover{background:transparent;}
+.jr-time{font-size:11px;font-weight:700;width:48px;flex-shrink:0;color:var(--muted);}
+.jr-time.fixed{color:var(--amber);}
+.jr-info{flex:1;min-width:0;}
+.jr-co{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.jr-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.jr-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.jr-dur{font-size:11px;font-weight:700;color:var(--ac);}
+.jr-more{padding:4px 8px;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:5px;font-size:11px;cursor:pointer;color:var(--muted);}
+.jr-more:hover{background:rgba(255,255,255,.1);color:var(--txt);}
+.empty-day{padding:10px 14px;font-size:12px;color:var(--muted);font-style:italic;}
+
+/* CONTRACTS */
+.ct-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border-radius:9px;margin-bottom:5px;cursor:pointer;transition:background .15s;}
+.ct-row:hover{background:var(--bg4);}
+.ct-due{width:72px;flex-shrink:0;text-align:center;}
+.ct-days{font-size:17px;font-weight:700;line-height:1;}
+.ct-days.ov{color:#f87171;}.ct-days.sn{color:#fbbf24;}.ct-days.ok{color:#4ade80;}
+.ct-dl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.ct-info{flex:1;min-width:0;}
+.ct-co{font-size:13px;font-weight:600;}
+.ct-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.ct-right{text-align:right;flex-shrink:0;}
+.ct-h{font-size:13px;font-weight:700;color:var(--ac);}
+.ct-fr{font-size:10px;color:var(--muted);}
+
+/* FORMS */
+.fld{margin-bottom:10px;}
+.fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;}
+.inp{width:100%;padding:9px 12px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid var(--bd);color:var(--txt);transition:border-color .15s;}
+.inp:focus{outline:none;border-color:var(--ac);}
+.inp option{background:#1e2535;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* MODALS */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;padding:16px;overflow-y:auto;align-items:flex-start;justify-content:center;}
+.mo.open{display:flex;}
+.mdl{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;width:100%;max-width:500px;margin:auto;}
+.mh{padding:15px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.mt{font-size:15px;font-weight:600;}
+.mx{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 2px;}
+.mb{padding:16px 18px;}
+.mf{padding:12px 18px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px;}
+
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.bg{background:rgba(22,163,74,.15);color:#4ade80;}
+.bb{background:rgba(37,99,235,.15);color:#60a5fa;}
+.ba{background:rgba(217,119,6,.15);color:#fbbf24;}
+.br{background:rgba(220,38,38,.15);color:#f87171;}
+.sync-flash{font-size:11px;font-weight:600;opacity:0;transition:opacity .4s;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY (closes sidebar on mobile tap) -->
+<div class="sb-overlay" id="sb-overlay" onclick="closeSB()"></div>
+
+<!-- SIDEBAR -->
+<div class="sb" id="sb">
+  <div class="sb-brand">
+    <div class="sb-mark">PP</div>
+    <div><div class="sb-name">Job Planner</div><div class="sb-role">Marcus Webb</div></div>
+  </div>
+  <div class="sb-body">
+    <div class="sb-sec">Schedule</div>
+    <div class="nv on" id="nv-schedule" onclick="go('schedule')"><span class="ic">📅</span>Weekly schedule</div>
+    <div class="nv" id="nv-contracts" onclick="go('contracts')"><span class="ic">📋</span>All contracts</div>
+    <div class="nv" id="nv-alerts" onclick="go('alerts')"><span class="ic">🔔</span>Alerts<span class="nv-badge" id="nb-al" style="display:none">0</span></div>
+    <div class="nv" id="nv-live" onclick="go('live')"><span class="ic">⚡</span>Live today</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main">
+  <div class="topbar">
+    <button onclick="toggleSB()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 6px;border-radius:6px;flex-shrink:0;">☰</button>
+    <div class="tb-title" id="pg-title">Weekly schedule</div>
+    <span class="sync-flash" id="sync-flash"></span>
+    <button class="btn btn-gr" onclick="loadAll()" style="flex-shrink:0">⟳</button>
+    <button class="btn btn-b" onclick="sendWeekToAll()" style="flex-shrink:0">📧 Send week</button>
+    <button class="btn btn-g" id="auto-btn" onclick="autoScheduleAll()" style="flex-shrink:0">⚡ Auto-schedule</button>
+  </div>
+
+  <div class="content">
+
+    <!-- SCHEDULE -->
+    <div class="panel on" id="pn-schedule">
+      <div class="alert-banner" id="alert-banner"></div>
+      <div class="stats-row">
+        <div class="sc g"><div class="sc-l">Jobs this week</div><div class="sc-v" id="st-jobs">—</div></div>
+        <div class="sc b"><div class="sc-l">Hours scheduled</div><div class="sc-v" id="st-hrs">—</div></div>
+        <div class="sc a"><div class="sc-l">Unscheduled</div><div class="sc-v" id="st-unsched">—</div></div>
+        <div class="sc r"><div class="sc-l">Alerts</div><div class="sc-v" id="st-alerts">0</div></div>
+      </div>
+      <div class="week-nav">
+        <button class="week-arrow" onclick="changeWeek(-1)">◀</button>
+        <div class="week-label" id="week-label">Loading...</div>
+        <button class="week-arrow" onclick="changeWeek(1)">▶</button>
+      </div>
+      <div id="sched-wrap"></div>
+    </div>
+
+    <!-- CONTRACTS -->
+    <div class="panel" id="pn-contracts">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <select class="inp" style="width:150px" id="ct-tech-f" onchange="renderContracts()"><option value="">All techs</option></select>
+        <select class="inp" style="width:140px" id="ct-due-f" onchange="renderContracts()"><option value="">All</option><option value="overdue">Overdue</option><option value="week">Due this week</option><option value="month">Due this month</option></select>
+        <input class="inp" style="width:160px" id="ct-search" placeholder="Search..." oninput="renderContracts()">
+        <span style="font-size:12px;color:var(--muted);margin-left:auto" id="ct-count"></span>
+      </div>
+      <div id="ct-list"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="panel" id="pn-alerts">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Incomplete jobs and field notifications.</div>
+      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;overflow:hidden"><div id="alerts-list"></div></div>
+    </div>
+
+    <!-- LIVE -->
+    <div class="panel" id="pn-live">
+      <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;"><span style="font-size:13px;font-weight:600">⚡ Live today</span><button class="btn btn-gr btn-sm" onclick="loadLive()">⟳</button></div>
+        <div id="live-content" style="padding:14px 16px;color:var(--muted)">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div class="mo" id="mo-job">
+<div class="mdl">
+  <div class="mh"><div class="mt" id="mo-job-title">Job</div><button class="mx" onclick="closeMo('mo-job')">×</button></div>
+  <div class="mb" id="mo-job-body"></div>
+  <div class="mf" id="mo-job-footer"></div>
+</div></div>
+
+<!-- REASSIGN MODAL -->
+<div class="mo" id="mo-reassign">
+<div class="mdl" style="max-width:380px">
+  <div class="mh"><div class="mt">Reassign job</div><button class="mx" onclick="closeMo('mo-reassign')">×</button></div>
+  <div class="mb">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px" id="reassign-desc"></div>
+    <div class="fld"><label>Assign to</label><select id="ra-tech" class="inp"></select></div>
+    <div class="fld"><label>New time</label><input id="ra-time" class="inp" type="time"></div>
+  </div>
+  <div class="mf"><button class="btn btn-gr" onclick="closeMo('mo-reassign')">Cancel</button><button class="btn btn-g" onclick="confirmReassign()">Reassign</button></div>
+</div></div>
+
+<!-- ADD JOB MODAL -->
+<div class="mo" id="mo-addjob">
+<div class="mdl" style="max-width:440px">
+  <div class="mh"><div class="mt" id="mo-addjob-title">Add job</div><button class="mx" onclick="closeMo('mo-addjob')">×</button></div>
+  <div class="mb">
+    <div class="fld"><label>Client / company *</label>
+      <input id="aj-company" class="inp" placeholder="Type to search..." oninput="filterAJCompany(this.value)" autocomplete="off">
+      <div id="aj-suggestions" style="display:none;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-top:4px;max-height:180px;overflow-y:auto;"></div>
+    </div>
+    <div class="fld"><label>Address</label><input id="aj-address" class="inp" placeholder="Auto-filled from contract"></div>
+    <div class="fg">
+      <div class="fld"><label>Technician *</label><select id="aj-tech" class="inp"></select></div>
+      <div class="fld"><label>Date *</label><input id="aj-date" class="inp" type="date"></div>
+      <div class="fld"><label>Start time</label><input id="aj-time" class="inp" type="time" value="09:00"></div>
+      <div class="fld"><label>Duration (hours)</label><input id="aj-dur" class="inp" type="number" step="0.5" min="0.5" value="1"></div>
+    </div>
+    <div class="fld"><label>Access notes</label><input id="aj-access" class="inp" placeholder="e.g. Key in lockbox"></div>
+    <div class="fld"><label>Notes</label><textarea id="aj-notes" class="inp" rows="2"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn btn-gr" onclick="closeMo('mo-addjob')">Cancel</button><button class="btn btn-g" onclick="saveAddedJob()">Add to schedule</button></div>
+</div></div>
+
+<!-- TECH PROFILE MODAL -->
+<div class="mo" id="mo-tech">
+<div class="mdl" style="max-width:520px">
+  <div class="mh"><div class="mt" id="mo-tech-title">Technician</div><button class="mx" onclick="closeMo('mo-tech')">×</button></div>
+  <div class="mb" id="mo-tech-body"></div>
+  <div class="mf"><button class="btn btn-gr" onclick="closeMo('mo-tech')">Close</button></div>
+</div></div>
+
+<!-- SEND TIME MODAL (replaces window.prompt) -->
+<div class="mo" id="mo-sendtime">
+<div class="mdl" style="max-width:340px">
+  <div class="mh"><div class="mt">Set time for this job</div><button class="mx" onclick="closeMo('mo-sendtime')">×</button></div>
+  <div class="mb">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px" id="sendtime-desc"></div>
+    <div class="fld"><label>Start time</label><input id="sendtime-val" class="inp" type="time"></div>
+  </div>
+  <div class="mf"><button class="btn btn-gr" onclick="closeMo('mo-sendtime')">Cancel</button><button class="btn btn-g" onclick="confirmSendTime()">Confirm</button></div>
+</div></div>
+
+<script>
+var FB='https://pest-proof-4571d-default-rtdb.asia-southeast1.firebasedatabase.app';
+function fbR(p,cb){fetch(FB+'/'+p+'.json').then(function(r){return r.json();}).then(function(d){cb(null,d);}).catch(function(e){cb(e,null);});}
+function fbW(p,d,cb){fetch(FB+'/'+p+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json();}).then(function(x){if(cb)cb(null,x);}).catch(function(e){if(cb)cb(e);});}
+function fbP(p,d,cb){fetch(FB+'/'+p+'.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(function(r){return r.json();}).then(function(x){if(cb)cb(null,x);}).catch(function(e){if(cb)cb(e);});}
+function toArr(v){if(!v)return[];if(Array.isArray(v))return v.filter(Boolean);return Object.keys(v).sort().map(function(k){return v[k];}).filter(Boolean);}
+
+// ── STATE ─────────────────────────────────────────────────────────────
+var EMP={},CONTRACTS={},SCHEDULES={},OUTCOMES=[],ALERTS_DATA=[];
+var weekOffset=0;
+var _reassignRef=null,_currentTechId=null,_sendTimeRef=null;
+// Track which tech boards are expanded
+var EXPANDED={};
+
+// ── SEED DATA ─────────────────────────────────────────────────────────
+var SEED_EMPLOYEES = {"emp_001":{"id":"emp_001","name":"Jordan Tran","role":"technician","status":"active","email":"jordan@pestproof.com.au","phone":"0412 111 222","address":"14 Palm Ave, Southport QLD 4215","suburb":"Southport","postcode":"4215","dob":"1990-03-15","startDate":"2024-05-22","employmentType":"full-time","payRate":32.5,"paySchedule":"fortnightly","tfn":"123 456 789","bankBSB":"064-141","bankAccount":"10827734","bankName":"CBA","emergencyName":"Linh Tran","emergencyPhone":"0412 333 444","emergencyRelation":"Spouse","annualLeaveBalance":8.5,"sickLeaveBalance":5.0,"leaveAccrualRate":1.54,"licences":[{"type":"QLD Pest Management Licence","number":"PCO-20847","expiry":"2027-01-07"},{"type":"QBCC Builder Licence","number":"QBCC-18234","expiry":"2027-07-06"},{"type":"White Card","number":"WC-99812","expiry":"2029-04-26"}],"inductions":["Company WHS","Chemical Handling","Manual Handling","Fire Safety"],"pin":"1234","avatar":"JT","notes":"Senior technician. Gold Coast north specialist."},"emp_002":{"id":"emp_002","name":"Alex Chen","role":"technician","status":"active","email":"alex@pestproof.com.au","phone":"0413 222 333","address":"8 Robina Town Centre Dr, Robina QLD 4226","suburb":"Robina","postcode":"4226","dob":"1995-07-22","startDate":"2025-05-17","employmentType":"full-time","payRate":29.5,"paySchedule":"fortnightly","tfn":"987 654 321","bankBSB":"062-111","bankAccount":"20938847","bankName":"Westpac","emergencyName":"Wei Chen","emergencyPhone":"0413 555 666","emergencyRelation":"Father","annualLeaveBalance":4.0,"sickLeaveBalance":8.0,"leaveAccrualRate":1.54,"licences":[{"type":"QLD Pest Management Licence","number":"PCO-21934","expiry":"2026-11-08"},{"type":"White Card","number":"WC-88234","expiry":"2028-05-01"}],"inductions":["Company WHS","Chemical Handling","Manual Handling"],"pin":"2345","avatar":"AC","notes":"Gold Coast south and hinterland."},"emp_003":{"id":"emp_003","name":"Sam Rivera","role":"technician","status":"active","email":"sam@pestproof.com.au","phone":"0414 333 444","address":"22 Hope Island Rd, Hope Island QLD 4212","suburb":"Hope Island","postcode":"4212","dob":"1988-11-05","startDate":"2023-05-28","employmentType":"full-time","payRate":35.0,"paySchedule":"fortnightly","tfn":"456 789 123","bankBSB":"033-000","bankAccount":"30192847","bankName":"ANZ","emergencyName":"Maria Rivera","emergencyPhone":"0414 777 888","emergencyRelation":"Partner","annualLeaveBalance":12.0,"sickLeaveBalance":2.0,"leaveAccrualRate":1.54,"licences":[{"type":"QLD Pest Management Licence","number":"PCO-18892","expiry":"2027-11-03"},{"type":"QBCC Builder Licence","number":"QBCC-22341","expiry":"2028-01-02"},{"type":"White Card","number":"WC-77123","expiry":"2030-04-21"},{"type":"Forklift Licence","number":"FL-44512","expiry":"2028-10-28"}],"inductions":["Company WHS","Chemical Handling","Manual Handling","Fire Safety","Working at Heights","Confined Spaces"],"pin":"3456","avatar":"SR","notes":"Senior lead. North Gold Coast specialist. Team leader."},"emp_004":{"id":"emp_004","name":"Priya Sharma","role":"sales","status":"active","email":"priya@pestproof.com.au","phone":"0415 444 555","address":"5 Broadbeach Blvd, Broadbeach QLD 4218","suburb":"Broadbeach","postcode":"4218","dob":"1992-04-18","startDate":"2024-11-18","employmentType":"full-time","payRate":42.0,"paySchedule":"fortnightly","tfn":"321 654 987","bankBSB":"014-010","bankAccount":"40281947","bankName":"NAB","emergencyName":"Raj Sharma","emergencyPhone":"0415 666 777","emergencyRelation":"Husband","annualLeaveBalance":6.0,"sickLeaveBalance":6.0,"leaveAccrualRate":1.54,"licences":[],"inductions":["Company WHS","Sales Training"],"pin":"4567","avatar":"PS","notes":"Top performer. Specialises in food manufacturing accounts."},"emp_005":{"id":"emp_005","name":"Marcus Webb","role":"planner","status":"active","email":"marcus@pestproof.com.au","phone":"0416 555 666","address":"3 Commerce Dr, Burleigh Heads QLD 4220","suburb":"Burleigh Heads","postcode":"4220","dob":"1985-09-30","startDate":"2023-11-24","employmentType":"full-time","payRate":45.0,"paySchedule":"fortnightly","tfn":"654 987 321","bankBSB":"064-141","bankAccount":"50374829","bankName":"CBA","emergencyName":"Julie Webb","emergencyPhone":"0416 888 999","emergencyRelation":"Spouse","annualLeaveBalance":10.0,"sickLeaveBalance":4.0,"leaveAccrualRate":1.54,"licences":[],"inductions":["Company WHS","Operations Training"],"pin":"5678","avatar":"MW","notes":"Operations manager. Handles all scheduling and route optimisation."}};
+var SEED_CONTRACTS = {"contract_001": {"id": "contract_001", "company": "GC Bakery Co", "address": "63 Industrial Dr, Arundel QLD 4214", "suburb": "Arundel", "postcode": "4206", "ftype": "Food manufacturing", "sqm": 120, "contact": "Facilities Manager", "phone": "07 5511 7912", "email": "gcbakeryco@email.com.au", "tech": "emp_003", "price": 3800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 950, "status": "active", "start": "2026-03-13", "renewal": "2026-06-13", "lastVisit": "2026-04-11", "nextVisit": "2026-05-11", "access": "Key in lockbox \u2014 code 4419", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.957773, "lng": 153.359831, "createdAt": "2025-09-03T00:00:00.000Z", "visits": []}, "contract_002": {"id": "contract_002", "company": "Pacific Seafood Processing", "address": "51 Station St, Biggera Waters QLD 4230", "suburb": "Biggera Waters", "postcode": "4203", "ftype": "Food manufacturing", "sqm": 5000, "contact": "Owner", "phone": "07 5528 8359", "email": "pacificseafo@email.com.au", "tech": "emp_003", "price": 6500, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 1625, "status": "active", "start": "2024-08-19", "renewal": "2026-10-11", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "Call ahead 30 minutes", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.956893, "lng": 153.378531, "createdAt": "2025-11-02T00:00:00.000Z", "visits": []}, "contract_003": {"id": "contract_003", "company": "GC Fresh Produce Hub", "address": "56 Surf Pde, Molendinar QLD 4220", "suburb": "Molendinar", "postcode": "4207", "ftype": "Food manufacturing", "sqm": 120, "contact": "Manager", "phone": "07 5548 2584", "email": "gcfreshprodu@email.com.au", "tech": "emp_001", "price": 3200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 800, "status": "active", "start": "2025-04-12", "renewal": "2026-11-10", "lastVisit": "2026-04-27", "nextVisit": "2026-05-27", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.981548, "lng": 153.360557, "createdAt": "2025-07-18T00:00:00.000Z", "visits": []}, "contract_004": {"id": "contract_004", "company": "Sunshine Dairy Products", "address": "97 Main St, Yatala QLD 4227", "suburb": "Yatala", "postcode": "4219", "ftype": "Food manufacturing", "sqm": 500, "contact": "Facilities Manager", "phone": "07 5546 4150", "email": "sunshinedair@email.com.au", "tech": "emp_002", "price": 8200, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 2050, "status": "active", "start": "2026-02-02", "renewal": "2026-06-13", "lastVisit": "2026-04-14", "nextVisit": "2026-05-14", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.731405, "lng": 153.237725, "createdAt": "2025-08-24T00:00:00.000Z", "visits": []}, "contract_005": {"id": "contract_005", "company": "Coomera Food Industries", "address": "60 Surf Pde, Coomera QLD 4213", "suburb": "Coomera", "postcode": "4219", "ftype": "Food manufacturing", "sqm": 1200, "contact": "Operations Manager", "phone": "07 5558 6977", "email": "coomerafoodi@email.com.au", "tech": "emp_002", "price": 5800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1450, "status": "active", "start": "2025-10-30", "renewal": "2026-11-10", "lastVisit": "2026-04-22", "nextVisit": "2026-05-22", "access": "After hours access \u2014 call owner", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.864212, "lng": 153.349596, "createdAt": "2025-09-12T00:00:00.000Z", "visits": []}, "contract_006": {"id": "contract_006", "company": "Bundall Food Co", "address": "166 Main St, Bundall QLD 4229", "suburb": "Bundall", "postcode": "4210", "ftype": "Food manufacturing", "sqm": 15000, "contact": "Site Manager", "phone": "07 5568 5010", "email": "bundallfoodc@email.com.au", "tech": "emp_003", "price": 4200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1050, "status": "active", "start": "2025-10-29", "renewal": "2027-01-09", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "Report to security first", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.00866, "lng": 153.418733, "createdAt": "2025-07-12T00:00:00.000Z", "visits": []}, "contract_007": {"id": "contract_007", "company": "GC Cold Storage", "address": "84 Surf Pde, Molendinar QLD 4211", "suburb": "Molendinar", "postcode": "4207", "ftype": "Cold storage", "sqm": 350, "contact": "Manager", "phone": "07 5540 7572", "email": "gccoldstorag@email.com.au", "tech": "emp_001", "price": 9500, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 2375, "status": "active", "start": "2025-07-14", "renewal": "2026-07-13", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "Swipe card at reception", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.976237, "lng": 153.359392, "createdAt": "2024-09-11T00:00:00.000Z", "visits": []}, "contract_008": {"id": "contract_008", "company": "Arctic Fresh Logistics", "address": "102 Station St, Yatala QLD 4224", "suburb": "Yatala", "postcode": "4219", "ftype": "Cold storage", "sqm": 200, "contact": "Operations Manager", "phone": "07 5517 5040", "email": "arcticfreshl@email.com.au", "tech": "emp_001", "price": 6800, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 1700, "status": "active", "start": "2024-09-17", "renewal": "2027-02-08", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "Loading dock rear entrance", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.739706, "lng": 153.240109, "createdAt": "2024-08-24T00:00:00.000Z", "visits": []}, "contract_009": {"id": "contract_009", "company": "CoolChain GC", "address": "57 Industrial Dr, Nerang QLD 4226", "suburb": "Nerang", "postcode": "4229", "ftype": "Cold storage", "sqm": 2000, "contact": "Manager", "phone": "07 5596 1771", "email": "coolchaingc@email.com.au", "tech": "emp_003", "price": 4800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1200, "status": "active", "start": "2025-12-23", "renewal": "2026-08-12", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.993044, "lng": 153.336988, "createdAt": "2025-11-02T00:00:00.000Z", "visits": []}, "contract_010": {"id": "contract_010", "company": "Marriott Surfers Paradise", "address": "98 Business Blvd, Surfers Paradise QLD 4224", "suburb": "Surfers Paradise", "postcode": "4219", "ftype": "Hospitality / Hotel", "sqm": 5000, "contact": "Operations Manager", "phone": "07 5570 1188", "email": "marriottsurf@email.com.au", "tech": "emp_003", "price": 18000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 4500, "status": "active", "start": "2024-05-18", "renewal": "2027-05-09", "lastVisit": "2026-04-15", "nextVisit": "2026-05-15", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": "06:00", "confirmedDay": null, "notes": "", "lat": -28.003557, "lng": 153.423271, "createdAt": "2024-05-16T00:00:00.000Z", "visits": []}, "contract_011": {"id": "contract_011", "company": "Sheraton Grand Mirage", "address": "88 Main St, Main Beach QLD 4219", "suburb": "Main Beach", "postcode": "4220", "ftype": "Hospitality / Hotel", "sqm": 1200, "contact": "Site Manager", "phone": "07 5558 1053", "email": "sheratongran@email.com.au", "tech": "emp_002", "price": 24000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 6000, "status": "active", "start": "2025-07-19", "renewal": "2027-02-08", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "Ask for duty manager", "priority": "normal", "confirmedTime": "06:30", "confirmedDay": null, "notes": "", "lat": -27.966982, "lng": 153.432372, "createdAt": "2024-11-11T00:00:00.000Z", "visits": []}, "contract_012": {"id": "contract_012", "company": "RACV Royal Pines", "address": "164 Business Blvd, Ashmore QLD 4229", "suburb": "Ashmore", "postcode": "4223", "ftype": "Hospitality / Hotel", "sqm": 350, "contact": "Site Manager", "phone": "07 5547 3646", "email": "racvroyalpin@email.com.au", "tech": "emp_001", "price": 14500, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 3625, "status": "active", "start": "2024-10-09", "renewal": "2027-02-08", "lastVisit": "2026-04-26", "nextVisit": "2026-05-26", "access": "Call ahead 30 minutes", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.00259, "lng": 153.365969, "createdAt": "2024-08-09T00:00:00.000Z", "visits": []}, "contract_013": {"id": "contract_013", "company": "Sofitel Gold Coast", "address": "93 Surf Pde, Broadbeach QLD 4219", "suburb": "Broadbeach", "postcode": "4208", "ftype": "Hospitality / Hotel", "sqm": 350, "contact": "Manager", "phone": "07 5530 2290", "email": "sofitelgoldc@email.com.au", "tech": "emp_002", "price": 19500, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 4875, "status": "active", "start": "2026-01-17", "renewal": "2027-05-09", "lastVisit": "2026-04-13", "nextVisit": "2026-05-13", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.032228, "lng": 153.423237, "createdAt": "2026-02-03T00:00:00.000Z", "visits": []}, "contract_014": {"id": "contract_014", "company": "Palazzo Versace", "address": "169 Park Rd, Main Beach QLD 4227", "suburb": "Main Beach", "postcode": "4220", "ftype": "Hospitality / Hotel", "sqm": 200, "contact": "Operations Manager", "phone": "07 5567 7932", "email": "palazzoversa@email.com.au", "tech": "emp_002", "price": 28000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 7000, "status": "active", "start": "2025-09-10", "renewal": "2027-02-08", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "", "priority": "normal", "confirmedTime": "06:00", "confirmedDay": "Tuesday", "notes": "", "lat": -27.971346, "lng": 153.419515, "createdAt": "2025-09-21T00:00:00.000Z", "visits": []}, "contract_015": {"id": "contract_015", "company": "Mantra on View", "address": "167 Commerce Ave, Surfers Paradise QLD 4224", "suburb": "Surfers Paradise", "postcode": "4219", "ftype": "Hospitality / Hotel", "sqm": 5000, "contact": "Owner", "phone": "07 5515 5061", "email": "mantraonview@email.com.au", "tech": "emp_002", "price": 9500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 2375, "status": "active", "start": "2025-08-27", "renewal": "2026-07-13", "lastVisit": "2026-04-29", "nextVisit": "2026-05-29", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.005766, "lng": 153.441903, "createdAt": "2026-03-24T00:00:00.000Z", "visits": []}, "contract_016": {"id": "contract_016", "company": "QT Gold Coast", "address": "2 Main St, Surfers Paradise QLD 4230", "suburb": "Surfers Paradise", "postcode": "4219", "ftype": "Hospitality / Hotel", "sqm": 80, "contact": "Site Manager", "phone": "07 5508 1514", "email": "qtgoldcoast@email.com.au", "tech": "emp_002", "price": 11000, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 2750, "status": "active", "start": "2025-05-11", "renewal": "2026-07-13", "lastVisit": "2026-04-11", "nextVisit": "2026-05-11", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.000922, "lng": 153.433769, "createdAt": "2025-08-14T00:00:00.000Z", "visits": []}, "contract_017": {"id": "contract_017", "company": "Peppers Broadbeach", "address": "34 Station St, Broadbeach QLD 4228", "suburb": "Broadbeach", "postcode": "4208", "ftype": "Hospitality / Hotel", "sqm": 8000, "contact": "Owner", "phone": "07 5531 8749", "email": "peppersbroad@email.com.au", "tech": "emp_003", "price": 8500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 2125, "status": "active", "start": "2025-02-22", "renewal": "2026-09-11", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.02862, "lng": 153.425285, "createdAt": "2026-01-05T00:00:00.000Z", "visits": []}, "contract_018": {"id": "contract_018", "company": "Hope Island Resort", "address": "120 Surf Pde, Hope Island QLD 4211", "suburb": "Hope Island", "postcode": "4210", "ftype": "Hospitality / Hotel", "sqm": 15000, "contact": "Manager", "phone": "07 5507 7596", "email": "hopeislandre@email.com.au", "tech": "emp_003", "price": 12000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 3000, "status": "active", "start": "2025-05-02", "renewal": "2026-07-13", "lastVisit": "2026-04-27", "nextVisit": "2026-05-27", "access": "Swipe card at reception", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.887379, "lng": 153.368472, "createdAt": "2025-09-30T00:00:00.000Z", "visits": []}, "contract_019": {"id": "contract_019", "company": "GCUH Facilities", "address": "47 Commerce Ave, Southport QLD 4224", "suburb": "Southport", "postcode": "4203", "ftype": "Healthcare", "sqm": 350, "contact": "Manager", "phone": "07 5556 2604", "email": "gcuhfaciliti@email.com.au", "tech": "emp_002", "price": 32000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 8000, "status": "active", "start": "2026-02-22", "renewal": "2027-04-09", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "", "priority": "high", "confirmedTime": "06:00", "confirmedDay": "Monday", "notes": "", "lat": -27.993274, "lng": 153.390804, "createdAt": "2026-03-30T00:00:00.000Z", "visits": []}, "contract_020": {"id": "contract_020", "company": "Pindara Private Hospital", "address": "43 Park Rd, Benowa QLD 4225", "suburb": "Benowa", "postcode": "4219", "ftype": "Healthcare", "sqm": 2000, "contact": "Site Manager", "phone": "07 5551 1960", "email": "pindarapriva@email.com.au", "tech": "emp_002", "price": 22000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 5500, "status": "active", "start": "2025-10-28", "renewal": "2026-12-10", "lastVisit": "2026-04-22", "nextVisit": "2026-05-22", "access": "Call ahead 30 minutes", "priority": "high", "confirmedTime": "07:00", "confirmedDay": null, "notes": "", "lat": -27.991473, "lng": 153.406974, "createdAt": "2025-03-11T00:00:00.000Z", "visits": []}, "contract_021": {"id": "contract_021", "company": "Robina Private Hospital", "address": "74 Park Rd, Robina QLD 4227", "suburb": "Robina", "postcode": "4225", "ftype": "Healthcare", "sqm": 15000, "contact": "Owner", "phone": "07 5519 4111", "email": "robinaprivat@email.com.au", "tech": "emp_001", "price": 18000, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 4500, "status": "active", "start": "2025-06-15", "renewal": "2026-09-11", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "Call ahead 30 minutes", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.06447, "lng": 153.385703, "createdAt": "2024-08-29T00:00:00.000Z", "visits": []}, "contract_022": {"id": "contract_022", "company": "Southport Medical Centre", "address": "15 Main St, Southport QLD 4228", "suburb": "Southport", "postcode": "4203", "ftype": "Healthcare", "sqm": 2000, "contact": "Facilities Manager", "phone": "07 5567 3579", "email": "southportmed@email.com.au", "tech": "emp_002", "price": 2950, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 738, "status": "active", "start": "2026-02-15", "renewal": "2027-02-08", "lastVisit": "2026-03-13", "nextVisit": "2026-05-12", "access": "Key in lockbox \u2014 code 4419", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.993156, "lng": 153.40296, "createdAt": "2025-10-06T00:00:00.000Z", "visits": []}, "contract_023": {"id": "contract_023", "company": "Varsity Medical Hub", "address": "61 Park Rd, Varsity Lakes QLD 4213", "suburb": "Varsity Lakes", "postcode": "4204", "ftype": "Healthcare", "sqm": 8000, "contact": "Site Manager", "phone": "07 5574 1651", "email": "varsitymedic@email.com.au", "tech": "emp_001", "price": 3200, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2024-07-19", "renewal": "2026-07-13", "lastVisit": "2026-03-21", "nextVisit": "2026-05-20", "access": "Report to security first", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.068099, "lng": 153.393504, "createdAt": "2024-06-10T00:00:00.000Z", "visits": []}, "contract_024": {"id": "contract_024", "company": "Helensvale Medical", "address": "67 Industrial Dr, Helensvale QLD 4220", "suburb": "Helensvale", "postcode": "4225", "ftype": "Healthcare", "sqm": 350, "contact": "Operations Manager", "phone": "07 5550 3144", "email": "helensvaleme@email.com.au", "tech": "emp_003", "price": 2400, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 600, "status": "active", "start": "2024-05-27", "renewal": "2027-04-09", "lastVisit": "2026-03-29", "nextVisit": "2026-05-28", "access": "Loading dock rear entrance", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.928695, "lng": 153.343327, "createdAt": "2025-01-01T00:00:00.000Z", "visits": []}, "contract_025": {"id": "contract_025", "company": "Palm Beach Medical", "address": "3 Park Rd, Palm Beach QLD 4229", "suburb": "Palm Beach", "postcode": "4219", "ftype": "Healthcare", "sqm": 8000, "contact": "Manager", "phone": "07 5509 9808", "email": "palmbeachmed@email.com.au", "tech": "emp_002", "price": 2600, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 650, "status": "active", "start": "2025-09-08", "renewal": "2027-02-08", "lastVisit": "2026-03-16", "nextVisit": "2026-05-15", "access": "Loading dock rear entrance", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.11042, "lng": 153.487715, "createdAt": "2025-11-30T00:00:00.000Z", "visits": []}, "contract_026": {"id": "contract_026", "company": "Coomera Aged Care", "address": "95 Commerce Ave, Coomera QLD 4215", "suburb": "Coomera", "postcode": "4219", "ftype": "Aged care", "sqm": 2000, "contact": "Facilities Manager", "phone": "07 5590 5956", "email": "coomeraagedc@email.com.au", "tech": "emp_003", "price": 7200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1800, "status": "active", "start": "2024-07-27", "renewal": "2027-04-09", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.852383, "lng": 153.365585, "createdAt": "2026-04-06T00:00:00.000Z", "visits": []}, "contract_027": {"id": "contract_027", "company": "Arcare Robina", "address": "170 Main St, Robina QLD 4214", "suburb": "Robina", "postcode": "4225", "ftype": "Aged care", "sqm": 500, "contact": "Manager", "phone": "07 5513 3546", "email": "arcarerobina@email.com.au", "tech": "emp_001", "price": 8500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 2125, "status": "active", "start": "2025-07-10", "renewal": "2026-10-11", "lastVisit": "2026-04-26", "nextVisit": "2026-05-26", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.066658, "lng": 153.375988, "createdAt": "2025-09-11T00:00:00.000Z", "visits": []}, "contract_028": {"id": "contract_028", "company": "Blue Care Southport", "address": "68 Business Blvd, Southport QLD 4225", "suburb": "Southport", "postcode": "4203", "ftype": "Aged care", "sqm": 500, "contact": "Manager", "phone": "07 5511 7939", "email": "bluecaresout@email.com.au", "tech": "emp_001", "price": 5800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1450, "status": "active", "start": "2025-07-05", "renewal": "2026-06-13", "lastVisit": "2026-04-13", "nextVisit": "2026-05-13", "access": "Call ahead 30 minutes", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.997142, "lng": 153.40175, "createdAt": "2025-05-08T00:00:00.000Z", "visits": []}, "contract_029": {"id": "contract_029", "company": "Bupa Gold Coast", "address": "42 Station St, Helensvale QLD 4224", "suburb": "Helensvale", "postcode": "4225", "ftype": "Aged care", "sqm": 5000, "contact": "Owner", "phone": "07 5571 1158", "email": "bupagoldcoas@email.com.au", "tech": "emp_002", "price": 7800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1950, "status": "active", "start": "2025-12-21", "renewal": "2026-07-13", "lastVisit": "2026-04-21", "nextVisit": "2026-05-21", "access": "", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.937384, "lng": 153.356596, "createdAt": "2025-11-13T00:00:00.000Z", "visits": []}, "contract_030": {"id": "contract_030", "company": "Whiddon Southport", "address": "142 Industrial Dr, Southport QLD 4223", "suburb": "Southport", "postcode": "4203", "ftype": "Aged care", "sqm": 200, "contact": "Manager", "phone": "07 5539 6974", "email": "whiddonsouth@email.com.au", "tech": "emp_003", "price": 6200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1550, "status": "active", "start": "2026-03-05", "renewal": "2026-11-10", "lastVisit": "2026-04-29", "nextVisit": "2026-05-29", "access": "Swipe card at reception", "priority": "high", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.003279, "lng": 153.395384, "createdAt": "2024-05-16T00:00:00.000Z", "visits": []}, "contract_031": {"id": "contract_031", "company": "Yakkarta Logistics", "address": "144 Surf Pde, Yatala QLD 4223", "suburb": "Yatala", "postcode": "4219", "ftype": "Warehouse", "sqm": 8000, "contact": "Site Manager", "phone": "07 5530 3662", "email": "yakkartalogi@email.com.au", "tech": "emp_002", "price": 6200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1550, "status": "active", "start": "2025-10-15", "renewal": "2026-12-10", "lastVisit": "2026-04-11", "nextVisit": "2026-05-11", "access": "Call ahead 30 minutes", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.732661, "lng": 153.234074, "createdAt": "2025-10-13T00:00:00.000Z", "visits": []}, "contract_032": {"id": "contract_032", "company": "GC Airport Logistics", "address": "106 Surf Pde, Bilinga QLD 4217", "suburb": "Bilinga", "postcode": "4219", "ftype": "Warehouse", "sqm": 500, "contact": "Site Manager", "phone": "07 5589 2771", "email": "gcairportlog@email.com.au", "tech": "emp_003", "price": 11000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 2750, "status": "active", "start": "2025-03-19", "renewal": "2026-06-13", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.15351, "lng": 153.510648, "createdAt": "2025-08-30T00:00:00.000Z", "visits": []}, "contract_033": {"id": "contract_033", "company": "Nerang Distribution", "address": "79 Surf Pde, Nerang QLD 4217", "suburb": "Nerang", "postcode": "4229", "ftype": "Warehouse", "sqm": 350, "contact": "Manager", "phone": "07 5584 4164", "email": "nerangdistri@email.com.au", "tech": "emp_002", "price": 4200, "freq": "6", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1050, "status": "active", "start": "2025-03-02", "renewal": "2026-11-10", "lastVisit": "2026-03-28", "nextVisit": "2026-05-27", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.994668, "lng": 153.338206, "createdAt": "2026-02-02T00:00:00.000Z", "visits": []}, "contract_034": {"id": "contract_034", "company": "Oxenford Industrial Park", "address": "103 Station St, Oxenford QLD 4227", "suburb": "Oxenford", "postcode": "4224", "ftype": "Warehouse", "sqm": 800, "contact": "Manager", "phone": "07 5514 5279", "email": "oxenfordindu@email.com.au", "tech": "emp_002", "price": 7500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1875, "status": "active", "start": "2025-10-14", "renewal": "2027-03-10", "lastVisit": "2026-04-14", "nextVisit": "2026-05-14", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.904418, "lng": 153.36283, "createdAt": "2026-03-06T00:00:00.000Z", "visits": []}, "contract_035": {"id": "contract_035", "company": "Coomera Warehousing", "address": "81 Park Rd, Coomera QLD 4229", "suburb": "Coomera", "postcode": "4219", "ftype": "Warehouse", "sqm": 5000, "contact": "Manager", "phone": "07 5549 4114", "email": "coomerawareh@email.com.au", "tech": "emp_002", "price": 5500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1375, "status": "active", "start": "2025-07-28", "renewal": "2026-06-13", "lastVisit": "2026-04-22", "nextVisit": "2026-05-22", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.858069, "lng": 153.354914, "createdAt": "2025-01-23T00:00:00.000Z", "visits": []}, "contract_036": {"id": "contract_036", "company": "GC Business Park A", "address": "176 Station St, Molendinar QLD 4216", "suburb": "Molendinar", "postcode": "4207", "ftype": "Warehouse", "sqm": 800, "contact": "Owner", "phone": "07 5508 6409", "email": "gcbusinesspa@email.com.au", "tech": "emp_003", "price": 3800, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 950, "status": "active", "start": "2024-07-15", "renewal": "2026-11-10", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.979602, "lng": 153.37113, "createdAt": "2025-12-08T00:00:00.000Z", "visits": []}, "contract_037": {"id": "contract_037", "company": "GC Business Park B", "address": "171 Park Rd, Arundel QLD 4220", "suburb": "Arundel", "postcode": "4206", "ftype": "Warehouse", "sqm": 1200, "contact": "Operations Manager", "phone": "07 5570 3085", "email": "gcbusinesspa@email.com.au", "tech": "emp_003", "price": 3600, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 900, "status": "active", "start": "2025-09-30", "renewal": "2026-12-10", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.941999, "lng": 153.355142, "createdAt": "2025-03-22T00:00:00.000Z", "visits": []}, "contract_038": {"id": "contract_038", "company": "Helensvale Storage", "address": "146 Commerce Ave, Helensvale QLD 4222", "suburb": "Helensvale", "postcode": "4225", "ftype": "Warehouse", "sqm": 5000, "contact": "Manager", "phone": "07 5538 5700", "email": "helensvalest@email.com.au", "tech": "emp_001", "price": 2800, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2025-09-11", "renewal": "2026-12-10", "lastVisit": "2026-03-21", "nextVisit": "2026-05-20", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.925037, "lng": 153.340481, "createdAt": "2024-08-01T00:00:00.000Z", "visits": []}, "contract_039": {"id": "contract_039", "company": "Pacific Fair Security", "address": "173 Industrial Dr, Broadbeach QLD 4226", "suburb": "Broadbeach", "postcode": "4208", "ftype": "Commercial retail", "sqm": 2000, "contact": "Site Manager", "phone": "07 5584 2389", "email": "pacificfairs@email.com.au", "tech": "emp_003", "price": 9200, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 2300, "status": "active", "start": "2025-06-28", "renewal": "2027-02-08", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.035555, "lng": 153.429836, "createdAt": "2024-07-05T00:00:00.000Z", "visits": []}, "contract_040": {"id": "contract_040", "company": "Harbour Town Outlet", "address": "193 Industrial Dr, Biggera Waters QLD 4219", "suburb": "Biggera Waters", "postcode": "4203", "ftype": "Commercial retail", "sqm": 350, "contact": "Site Manager", "phone": "07 5518 1400", "email": "harbourtowno@email.com.au", "tech": "emp_003", "price": 12000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 3000, "status": "active", "start": "2026-02-26", "renewal": "2026-09-11", "lastVisit": "2026-04-15", "nextVisit": "2026-05-15", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.960296, "lng": 153.394368, "createdAt": "2024-07-28T00:00:00.000Z", "visits": []}, "contract_041": {"id": "contract_041", "company": "Upper Coomera SC", "address": "162 Business Blvd, Upper Coomera QLD 4216", "suburb": "Upper Coomera", "postcode": "4206", "ftype": "Commercial retail", "sqm": 1200, "contact": "Owner", "phone": "07 5551 4997", "email": "uppercoomera@email.com.au", "tech": "emp_003", "price": 8500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 2125, "status": "active", "start": "2025-11-14", "renewal": "2027-04-09", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.888543, "lng": 153.338289, "createdAt": "2026-04-09T00:00:00.000Z", "visits": []}, "contract_042": {"id": "contract_042", "company": "Australia Fair", "address": "200 Park Rd, Southport QLD 4217", "suburb": "Southport", "postcode": "4203", "ftype": "Commercial retail", "sqm": 200, "contact": "Facilities Manager", "phone": "07 5559 1822", "email": "australiafai@email.com.au", "tech": "emp_002", "price": 7200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1800, "status": "active", "start": "2024-09-21", "renewal": "2026-09-11", "lastVisit": "2026-04-26", "nextVisit": "2026-05-26", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.986791, "lng": 153.405709, "createdAt": "2025-01-02T00:00:00.000Z", "visits": []}, "contract_043": {"id": "contract_043", "company": "Surfers Bakehouse", "address": "144 Business Blvd, Surfers Paradise QLD 4220", "suburb": "Surfers Paradise", "postcode": "4219", "ftype": "Food retail", "sqm": 2000, "contact": "Facilities Manager", "phone": "07 5592 9270", "email": "surfersbakeh@email.com.au", "tech": "emp_001", "price": 1450, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 362, "status": "active", "start": "2025-02-02", "renewal": "2027-02-08", "lastVisit": "2026-04-13", "nextVisit": "2026-05-13", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.995972, "lng": 153.435352, "createdAt": "2025-11-03T00:00:00.000Z", "visits": []}, "contract_044": {"id": "contract_044", "company": "Mudgeeraba Fresh Market", "address": "193 Industrial Dr, Mudgeeraba QLD 4230", "suburb": "Mudgeeraba", "postcode": "4205", "ftype": "Food retail", "sqm": 500, "contact": "Facilities Manager", "phone": "07 5562 4919", "email": "mudgeerabafr@email.com.au", "tech": "emp_003", "price": 2100, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 525, "status": "active", "start": "2025-07-07", "renewal": "2027-01-09", "lastVisit": "2026-04-21", "nextVisit": "2026-05-21", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.06477, "lng": 153.358001, "createdAt": "2025-06-26T00:00:00.000Z", "visits": []}, "contract_045": {"id": "contract_045", "company": "Burleigh Heads Fish & Chips", "address": "139 Main St, Burleigh Heads QLD 4214", "suburb": "Burleigh Heads", "postcode": "4229", "ftype": "Food retail", "sqm": 200, "contact": "Site Manager", "phone": "07 5549 3503", "email": "burleighhead@email.com.au", "tech": "emp_003", "price": 1450, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 362, "status": "active", "start": "2025-09-07", "renewal": "2026-07-13", "lastVisit": "2026-04-29", "nextVisit": "2026-05-29", "access": "Report to security first", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.089566, "lng": 153.451394, "createdAt": "2025-02-21T00:00:00.000Z", "visits": []}, "contract_046": {"id": "contract_046", "company": "Palm Beach Fish Market", "address": "53 Surf Pde, Palm Beach QLD 4223", "suburb": "Palm Beach", "postcode": "4219", "ftype": "Food retail", "sqm": 1200, "contact": "Facilities Manager", "phone": "07 5589 1320", "email": "palmbeachfis@email.com.au", "tech": "emp_003", "price": 2100, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 525, "status": "active", "start": "2024-09-02", "renewal": "2026-12-10", "lastVisit": "2026-04-11", "nextVisit": "2026-05-11", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.118148, "lng": 153.477315, "createdAt": "2026-04-08T00:00:00.000Z", "visits": []}, "contract_047": {"id": "contract_047", "company": "Currumbin Fish Co", "address": "108 Business Blvd, Currumbin QLD 4227", "suburb": "Currumbin", "postcode": "4227", "ftype": "Food retail", "sqm": 8000, "contact": "Site Manager", "phone": "07 5562 4595", "email": "currumbinfis@email.com.au", "tech": "emp_002", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2025-07-09", "renewal": "2026-12-10", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.140028, "lng": 153.4878, "createdAt": "2026-03-16T00:00:00.000Z", "visits": []}, "contract_048": {"id": "contract_048", "company": "The Broadbeach Diner", "address": "104 Station St, Broadbeach QLD 4215", "suburb": "Broadbeach", "postcode": "4208", "ftype": "Restaurant / Cafe", "sqm": 2000, "contact": "Site Manager", "phone": "07 5579 9751", "email": "thebroadbeac@email.com.au", "tech": "emp_003", "price": 2400, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 600, "status": "active", "start": "2026-03-18", "renewal": "2026-12-10", "lastVisit": "2026-04-27", "nextVisit": "2026-05-27", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.035277, "lng": 153.434583, "createdAt": "2024-09-14T00:00:00.000Z", "visits": []}, "contract_049": {"id": "contract_049", "company": "Southport Kitchen", "address": "35 Surf Pde, Southport QLD 4224", "suburb": "Southport", "postcode": "4203", "ftype": "Restaurant / Cafe", "sqm": 200, "contact": "Manager", "phone": "07 5533 7211", "email": "southportkit@email.com.au", "tech": "emp_002", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-05-14", "renewal": "2026-09-11", "lastVisit": "2026-04-14", "nextVisit": "2026-05-14", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.003458, "lng": 153.400855, "createdAt": "2025-05-15T00:00:00.000Z", "visits": []}, "contract_050": {"id": "contract_050", "company": "Hope Island Cafe", "address": "193 Surf Pde, Hope Island QLD 4223", "suburb": "Hope Island", "postcode": "4210", "ftype": "Restaurant / Cafe", "sqm": 500, "contact": "Manager", "phone": "07 5560 1317", "email": "hopeislandca@email.com.au", "tech": "emp_001", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2024-10-09", "renewal": "2026-06-13", "lastVisit": "2026-04-22", "nextVisit": "2026-05-22", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.880775, "lng": 153.367583, "createdAt": "2025-08-28T00:00:00.000Z", "visits": []}, "contract_051": {"id": "contract_051", "company": "Coomera Waters Cafe", "address": "11 Surf Pde, Coomera QLD 4210", "suburb": "Coomera", "postcode": "4219", "ftype": "Restaurant / Cafe", "sqm": 350, "contact": "Site Manager", "phone": "07 5502 3496", "email": "coomerawater@email.com.au", "tech": "emp_001", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2025-08-13", "renewal": "2026-08-12", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.868628, "lng": 153.367146, "createdAt": "2024-05-29T00:00:00.000Z", "visits": []}, "contract_052": {"id": "contract_052", "company": "Helensvale Kitchen", "address": "180 Commerce Ave, Helensvale QLD 4221", "suburb": "Helensvale", "postcode": "4225", "ftype": "Restaurant / Cafe", "sqm": 200, "contact": "Facilities Manager", "phone": "07 5577 2876", "email": "helensvaleki@email.com.au", "tech": "emp_001", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-10-29", "renewal": "2026-10-11", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.928721, "lng": 153.341359, "createdAt": "2024-08-30T00:00:00.000Z", "visits": []}, "contract_053": {"id": "contract_053", "company": "Robina Restaurant Row A", "address": "97 Park Rd, Robina QLD 4216", "suburb": "Robina", "postcode": "4225", "ftype": "Restaurant / Cafe", "sqm": 120, "contact": "Facilities Manager", "phone": "07 5588 4978", "email": "robinarestau@email.com.au", "tech": "emp_003", "price": 2200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 550, "status": "active", "start": "2025-12-31", "renewal": "2027-05-09", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.064422, "lng": 153.381516, "createdAt": "2024-05-14T00:00:00.000Z", "visits": []}, "contract_054": {"id": "contract_054", "company": "Robina Restaurant Row B", "address": "145 Surf Pde, Robina QLD 4211", "suburb": "Robina", "postcode": "4225", "ftype": "Restaurant / Cafe", "sqm": 800, "contact": "Facilities Manager", "phone": "07 5554 7071", "email": "robinarestau@email.com.au", "tech": "emp_003", "price": 2000, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 500, "status": "active", "start": "2026-02-03", "renewal": "2027-02-08", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.066889, "lng": 153.385925, "createdAt": "2025-04-30T00:00:00.000Z", "visits": []}, "contract_055": {"id": "contract_055", "company": "Nerang Bakehouse", "address": "28 Park Rd, Nerang QLD 4221", "suburb": "Nerang", "postcode": "4229", "ftype": "Restaurant / Cafe", "sqm": 15000, "contact": "Owner", "phone": "07 5590 3506", "email": "nerangbakeho@email.com.au", "tech": "emp_003", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2025-01-24", "renewal": "2026-08-12", "lastVisit": "2026-04-15", "nextVisit": "2026-05-15", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.994008, "lng": 153.345447, "createdAt": "2024-10-27T00:00:00.000Z", "visits": []}, "contract_056": {"id": "contract_056", "company": "Runaway Bay Cafe", "address": "138 Surf Pde, Runaway Bay QLD 4225", "suburb": "Runaway Bay", "postcode": "4228", "ftype": "Restaurant / Cafe", "sqm": 2000, "contact": "Owner", "phone": "07 5593 5397", "email": "runawaybayca@email.com.au", "tech": "emp_001", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-05-19", "renewal": "2026-09-11", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.946598, "lng": 153.401164, "createdAt": "2025-07-03T00:00:00.000Z", "visits": []}, "contract_057": {"id": "contract_057", "company": "Labrador Lunch Bar", "address": "157 Station St, Labrador QLD 4222", "suburb": "Labrador", "postcode": "4221", "ftype": "Restaurant / Cafe", "sqm": 800, "contact": "Manager", "phone": "07 5563 6325", "email": "labradorlunc@email.com.au", "tech": "emp_003", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2025-10-10", "renewal": "2027-01-09", "lastVisit": "2026-04-26", "nextVisit": "2026-05-26", "access": "Swipe card at reception", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.970123, "lng": 153.399294, "createdAt": "2025-04-16T00:00:00.000Z", "visits": []}, "contract_058": {"id": "contract_058", "company": "Labrador Child Care", "address": "153 Station St, Labrador QLD 4218", "suburb": "Labrador", "postcode": "4221", "ftype": "Education / Childcare", "sqm": 5000, "contact": "Manager", "phone": "07 5566 4130", "email": "labradorchil@email.com.au", "tech": "emp_001", "price": 2600, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 650, "status": "active", "start": "2026-01-17", "renewal": "2026-09-11", "lastVisit": "2026-03-14", "nextVisit": "2026-05-13", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.969833, "lng": 153.395593, "createdAt": "2025-02-22T00:00:00.000Z", "visits": []}, "contract_059": {"id": "contract_059", "company": "GC Grammar School", "address": "122 Station St, Southport QLD 4225", "suburb": "Southport", "postcode": "4203", "ftype": "Education / Childcare", "sqm": 2000, "contact": "Manager", "phone": "07 5511 5820", "email": "gcgrammarsch@email.com.au", "tech": "emp_003", "price": 5800, "freq": "6", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1450, "status": "active", "start": "2025-08-31", "renewal": "2026-12-10", "lastVisit": "2026-03-22", "nextVisit": "2026-05-21", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.992896, "lng": 153.392806, "createdAt": "2025-08-08T00:00:00.000Z", "visits": []}, "contract_060": {"id": "contract_060", "company": "Bond University", "address": "142 Business Blvd, Robina QLD 4221", "suburb": "Robina", "postcode": "4225", "ftype": "Education / Childcare", "sqm": 1200, "contact": "Facilities Manager", "phone": "07 5542 6764", "email": "bonduniversi@email.com.au", "tech": "emp_001", "price": 18000, "freq": "6", "timeOnSite": 2.0, "billing": "quarterly", "installment": 4500, "status": "active", "start": "2025-01-05", "renewal": "2026-10-11", "lastVisit": "2026-03-30", "nextVisit": "2026-05-29", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.069721, "lng": 153.37738, "createdAt": "2025-07-31T00:00:00.000Z", "visits": []}, "contract_061": {"id": "contract_061", "company": "Coomera Anglican College", "address": "31 Station St, Coomera QLD 4227", "suburb": "Coomera", "postcode": "4219", "ftype": "Education / Childcare", "sqm": 200, "contact": "Site Manager", "phone": "07 5527 8933", "email": "coomeraangli@email.com.au", "tech": "emp_002", "price": 7500, "freq": "6", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1875, "status": "active", "start": "2025-07-05", "renewal": "2027-05-09", "lastVisit": "2026-03-12", "nextVisit": "2026-05-11", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.867587, "lng": 153.351852, "createdAt": "2024-10-24T00:00:00.000Z", "visits": []}, "contract_062": {"id": "contract_062", "company": "Helensvale Kids", "address": "50 Commerce Ave, Helensvale QLD 4217", "suburb": "Helensvale", "postcode": "4225", "ftype": "Education / Childcare", "sqm": 800, "contact": "Site Manager", "phone": "07 5538 1231", "email": "helensvaleki@email.com.au", "tech": "emp_003", "price": 2200, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 550, "status": "active", "start": "2024-10-15", "renewal": "2026-08-12", "lastVisit": "2026-03-20", "nextVisit": "2026-05-19", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.93434, "lng": 153.339011, "createdAt": "2026-02-27T00:00:00.000Z", "visits": []}, "contract_063": {"id": "contract_063", "company": "Nerang Kindy", "address": "33 Station St, Nerang QLD 4225", "suburb": "Nerang", "postcode": "4229", "ftype": "Education / Childcare", "sqm": 120, "contact": "Manager", "phone": "07 5573 5658", "email": "nerangkindy@email.com.au", "tech": "emp_001", "price": 1800, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2024-12-20", "renewal": "2027-01-09", "lastVisit": "2026-03-28", "nextVisit": "2026-05-27", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.999933, "lng": 153.342948, "createdAt": "2025-05-01T00:00:00.000Z", "visits": []}, "contract_064": {"id": "contract_064", "company": "Dreamworld Facilities", "address": "123 Main St, Coomera QLD 4212", "suburb": "Coomera", "postcode": "4219", "ftype": "Entertainment", "sqm": 1200, "contact": "Owner", "phone": "07 5509 1878", "email": "dreamworldfa@email.com.au", "tech": "emp_002", "price": 28000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 7000, "status": "active", "start": "2025-11-10", "renewal": "2026-08-12", "lastVisit": "2026-04-21", "nextVisit": "2026-05-21", "access": "", "priority": "normal", "confirmedTime": "07:00", "confirmedDay": "Thursday", "notes": "", "lat": -27.85069, "lng": 153.35305, "createdAt": "2025-06-07T00:00:00.000Z", "visits": []}, "contract_065": {"id": "contract_065", "company": "Sea World Facilities", "address": "196 Park Rd, Main Beach QLD 4229", "suburb": "Main Beach", "postcode": "4220", "ftype": "Entertainment", "sqm": 8000, "contact": "Facilities Manager", "phone": "07 5528 9561", "email": "seaworldfaci@email.com.au", "tech": "emp_002", "price": 22000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 5500, "status": "active", "start": "2025-03-21", "renewal": "2027-01-09", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": "07:00", "confirmedDay": "Wednesday", "notes": "", "lat": -27.962122, "lng": 153.419369, "createdAt": "2025-06-14T00:00:00.000Z", "visits": []}, "contract_066": {"id": "contract_066", "company": "HOTA Arts Centre", "address": "159 Main St, Bundall QLD 4229", "suburb": "Bundall", "postcode": "4210", "ftype": "Hospitality / Hotel", "sqm": 120, "contact": "Site Manager", "phone": "07 5580 4457", "email": "hotaartscent@email.com.au", "tech": "emp_001", "price": 5800, "freq": "6", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1450, "status": "active", "start": "2025-07-18", "renewal": "2027-04-09", "lastVisit": "2026-03-26", "nextVisit": "2026-05-25", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.994199, "lng": 153.406108, "createdAt": "2025-11-05T00:00:00.000Z", "visits": []}, "contract_067": {"id": "contract_067", "company": "Coolangatta Beach Club", "address": "1 Park Rd, Coolangatta QLD 4224", "suburb": "Coolangatta", "postcode": "4202", "ftype": "Hospitality / Hotel", "sqm": 8000, "contact": "Owner", "phone": "07 5537 1534", "email": "coolangattab@email.com.au", "tech": "emp_001", "price": 4400, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1100, "status": "active", "start": "2025-08-20", "renewal": "2026-10-11", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.173524, "lng": 153.532501, "createdAt": "2025-06-29T00:00:00.000Z", "visits": []}, "contract_068": {"id": "contract_068", "company": "Currumbin RSL", "address": "60 Commerce Ave, Currumbin QLD 4230", "suburb": "Currumbin", "postcode": "4227", "ftype": "Hospitality / Hotel", "sqm": 8000, "contact": "Site Manager", "phone": "07 5554 2880", "email": "currumbinrsl@email.com.au", "tech": "emp_003", "price": 4800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1200, "status": "active", "start": "2024-10-04", "renewal": "2026-09-11", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.128808, "lng": 153.481424, "createdAt": "2025-11-13T00:00:00.000Z", "visits": []}, "contract_069": {"id": "contract_069", "company": "Southport RSL", "address": "43 Surf Pde, Southport QLD 4219", "suburb": "Southport", "postcode": "4203", "ftype": "Hospitality / Hotel", "sqm": 8000, "contact": "Facilities Manager", "phone": "07 5536 8195", "email": "southportrsl@email.com.au", "tech": "emp_003", "price": 5200, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1300, "status": "active", "start": "2025-12-08", "renewal": "2027-01-09", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.987467, "lng": 153.389428, "createdAt": "2025-06-07T00:00:00.000Z", "visits": []}, "contract_070": {"id": "contract_070", "company": "Runaway Bay RSL", "address": "139 Park Rd, Runaway Bay QLD 4224", "suburb": "Runaway Bay", "postcode": "4228", "ftype": "Hospitality / Hotel", "sqm": 120, "contact": "Facilities Manager", "phone": "07 5505 8078", "email": "runawaybayrs@email.com.au", "tech": "emp_002", "price": 4400, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1100, "status": "active", "start": "2025-05-19", "renewal": "2027-03-10", "lastVisit": "2026-04-15", "nextVisit": "2026-05-15", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.94395, "lng": 153.390445, "createdAt": "2026-03-19T00:00:00.000Z", "visits": []}, "contract_071": {"id": "contract_071", "company": "Robina Town Gym", "address": "148 Business Blvd, Robina QLD 4210", "suburb": "Robina", "postcode": "4225", "ftype": "Gym / Fitness", "sqm": 15000, "contact": "Operations Manager", "phone": "07 5573 1659", "email": "robinatowngy@email.com.au", "tech": "emp_003", "price": 2400, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 600, "status": "active", "start": "2025-10-17", "renewal": "2027-01-09", "lastVisit": "2026-03-19", "nextVisit": "2026-05-18", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.078422, "lng": 153.383486, "createdAt": "2024-06-16T00:00:00.000Z", "visits": []}, "contract_072": {"id": "contract_072", "company": "Southport Fitness", "address": "150 Park Rd, Southport QLD 4230", "suburb": "Southport", "postcode": "4203", "ftype": "Gym / Fitness", "sqm": 2000, "contact": "Manager", "phone": "07 5560 6700", "email": "southportfit@email.com.au", "tech": "emp_002", "price": 2200, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 550, "status": "active", "start": "2025-02-20", "renewal": "2026-11-10", "lastVisit": "2026-03-27", "nextVisit": "2026-05-26", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.985679, "lng": 153.39163, "createdAt": "2024-05-28T00:00:00.000Z", "visits": []}, "contract_073": {"id": "contract_073", "company": "Helensvale Fitness", "address": "178 Park Rd, Helensvale QLD 4219", "suburb": "Helensvale", "postcode": "4225", "ftype": "Gym / Fitness", "sqm": 15000, "contact": "Owner", "phone": "07 5597 1601", "email": "helensvalefi@email.com.au", "tech": "emp_001", "price": 2000, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 500, "status": "active", "start": "2025-01-04", "renewal": "2026-07-13", "lastVisit": "2026-03-14", "nextVisit": "2026-05-13", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.922845, "lng": 153.343596, "createdAt": "2025-07-30T00:00:00.000Z", "visits": []}, "contract_074": {"id": "contract_074", "company": "Helensvale Pharmacy", "address": "132 Surf Pde, Helensvale QLD 4210", "suburb": "Helensvale", "postcode": "4225", "ftype": "Pharmacy / Medical", "sqm": 15000, "contact": "Facilities Manager", "phone": "07 5559 7770", "email": "helensvaleph@email.com.au", "tech": "emp_001", "price": 1650, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 412, "status": "active", "start": "2026-02-18", "renewal": "2026-09-11", "lastVisit": "2026-03-22", "nextVisit": "2026-05-21", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.937682, "lng": 153.352451, "createdAt": "2025-04-09T00:00:00.000Z", "visits": []}, "contract_075": {"id": "contract_075", "company": "Parkwood Physio", "address": "195 Main St, Parkwood QLD 4216", "suburb": "Parkwood", "postcode": "4224", "ftype": "Pharmacy / Medical", "sqm": 500, "contact": "Facilities Manager", "phone": "07 5516 5719", "email": "parkwoodphys@email.com.au", "tech": "emp_001", "price": 1800, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-01-21", "renewal": "2027-05-09", "lastVisit": "2026-03-30", "nextVisit": "2026-05-29", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.049871, "lng": 153.363508, "createdAt": "2025-12-11T00:00:00.000Z", "visits": []}, "contract_076": {"id": "contract_076", "company": "Mermaid Beach Dental", "address": "62 Station St, Mermaid Beach QLD 4215", "suburb": "Mermaid Beach", "postcode": "4208", "ftype": "Pharmacy / Medical", "sqm": 500, "contact": "Facilities Manager", "phone": "07 5501 7684", "email": "mermaidbeach@email.com.au", "tech": "emp_003", "price": 1600, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2026-01-09", "renewal": "2026-09-11", "lastVisit": "2026-03-12", "nextVisit": "2026-05-11", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.036537, "lng": 153.442177, "createdAt": "2024-12-28T00:00:00.000Z", "visits": []}, "contract_077": {"id": "contract_077", "company": "Robina Pharmacy", "address": "184 Commerce Ave, Robina QLD 4226", "suburb": "Robina", "postcode": "4225", "ftype": "Pharmacy / Medical", "sqm": 500, "contact": "Owner", "phone": "07 5561 8736", "email": "robinapharma@email.com.au", "tech": "emp_003", "price": 1800, "freq": "6", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-08-08", "renewal": "2027-01-09", "lastVisit": "2026-03-20", "nextVisit": "2026-05-19", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.070046, "lng": 153.373079, "createdAt": "2025-11-17T00:00:00.000Z", "visits": []}, "contract_078": {"id": "contract_078", "company": "Burleigh Heads Medical", "address": "192 Industrial Dr, Burleigh Heads QLD 4212", "suburb": "Burleigh Heads", "postcode": "4229", "ftype": "Pharmacy / Medical", "sqm": 500, "contact": "Owner", "phone": "07 5543 9318", "email": "burleighhead@email.com.au", "tech": "emp_002", "price": 2200, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 550, "status": "active", "start": "2025-07-15", "renewal": "2026-06-13", "lastVisit": "2026-03-28", "nextVisit": "2026-05-27", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.091188, "lng": 153.456988, "createdAt": "2025-06-13T00:00:00.000Z", "visits": []}, "contract_079": {"id": "contract_079", "company": "Molendinar Auto", "address": "126 Surf Pde, Molendinar QLD 4214", "suburb": "Molendinar", "postcode": "4207", "ftype": "Industrial", "sqm": 2000, "contact": "Facilities Manager", "phone": "07 5561 6654", "email": "molendinarau@email.com.au", "tech": "emp_001", "price": 2800, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2025-05-09", "renewal": "2027-02-08", "lastVisit": "2026-03-15", "nextVisit": "2026-05-14", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.978261, "lng": 153.374978, "createdAt": "2025-03-24T00:00:00.000Z", "visits": []}, "contract_080": {"id": "contract_080", "company": "Nerang Auto Parts", "address": "179 Industrial Dr, Nerang QLD 4228", "suburb": "Nerang", "postcode": "4229", "ftype": "Industrial", "sqm": 1200, "contact": "Site Manager", "phone": "07 5599 7730", "email": "nerangautopa@email.com.au", "tech": "emp_002", "price": 2400, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 600, "status": "active", "start": "2026-03-01", "renewal": "2026-11-10", "lastVisit": "2026-03-23", "nextVisit": "2026-05-22", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.992343, "lng": 153.346392, "createdAt": "2024-12-16T00:00:00.000Z", "visits": []}, "contract_081": {"id": "contract_081", "company": "Arundel Industrial A", "address": "170 Surf Pde, Arundel QLD 4230", "suburb": "Arundel", "postcode": "4206", "ftype": "Industrial", "sqm": 200, "contact": "Owner", "phone": "07 5504 3068", "email": "arundelindus@email.com.au", "tech": "emp_002", "price": 3200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2024-11-16", "renewal": "2027-03-10", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.941731, "lng": 153.352625, "createdAt": "2026-01-02T00:00:00.000Z", "visits": []}, "contract_082": {"id": "contract_082", "company": "Arundel Industrial B", "address": "4 Station St, Arundel QLD 4214", "suburb": "Arundel", "postcode": "4206", "ftype": "Industrial", "sqm": 1200, "contact": "Site Manager", "phone": "07 5509 8692", "email": "arundelindus@email.com.au", "tech": "emp_003", "price": 3000, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 750, "status": "active", "start": "2025-07-17", "renewal": "2026-11-10", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.958006, "lng": 153.363209, "createdAt": "2025-03-03T00:00:00.000Z", "visits": []}, "contract_083": {"id": "contract_083", "company": "Yatala Industrial Estate", "address": "173 Surf Pde, Yatala QLD 4227", "suburb": "Yatala", "postcode": "4219", "ftype": "Industrial", "sqm": 1200, "contact": "Operations Manager", "phone": "07 5580 8994", "email": "yatalaindust@email.com.au", "tech": "emp_002", "price": 5500, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1375, "status": "active", "start": "2024-10-07", "renewal": "2026-06-13", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.744394, "lng": 153.233571, "createdAt": "2026-02-03T00:00:00.000Z", "visits": []}, "contract_084": {"id": "contract_084", "company": "Hope Island Marina Hotel", "address": "59 Station St, Hope Island QLD 4212", "suburb": "Hope Island", "postcode": "4210", "ftype": "Hospitality / Hotel", "sqm": 1200, "contact": "Manager", "phone": "07 5597 2646", "email": "hopeislandma@email.com.au", "tech": "emp_003", "price": 5800, "freq": "12", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1450, "status": "active", "start": "2025-01-15", "renewal": "2026-08-12", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.883377, "lng": 153.378419, "createdAt": "2025-06-12T00:00:00.000Z", "visits": []}, "contract_085": {"id": "contract_085", "company": "Runaway Bay Marina", "address": "76 Commerce Ave, Runaway Bay QLD 4221", "suburb": "Runaway Bay", "postcode": "4228", "ftype": "Commercial retail", "sqm": 1200, "contact": "Site Manager", "phone": "07 5531 9702", "email": "runawaybayma@email.com.au", "tech": "emp_002", "price": 2800, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2025-02-17", "renewal": "2027-03-10", "lastVisit": "2026-03-16", "nextVisit": "2026-05-15", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.95108, "lng": 153.400923, "createdAt": "2025-10-12T00:00:00.000Z", "visits": []}, "contract_086": {"id": "contract_086", "company": "Main Beach Marina", "address": "98 Business Blvd, Main Beach QLD 4217", "suburb": "Main Beach", "postcode": "4220", "ftype": "Commercial retail", "sqm": 2000, "contact": "Facilities Manager", "phone": "07 5518 4804", "email": "mainbeachmar@email.com.au", "tech": "emp_003", "price": 3200, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2024-12-28", "renewal": "2027-04-09", "lastVisit": "2026-03-19", "nextVisit": "2026-05-18", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.978499, "lng": 153.42919, "createdAt": "2024-12-30T00:00:00.000Z", "visits": []}, "contract_087": {"id": "contract_087", "company": "GC Convention Centre", "address": "120 Commerce Ave, Broadbeach QLD 4227", "suburb": "Broadbeach", "postcode": "4208", "ftype": "Commercial retail", "sqm": 200, "contact": "Manager", "phone": "07 5556 6661", "email": "gcconvention@email.com.au", "tech": "emp_003", "price": 22000, "freq": "12", "timeOnSite": 2.0, "billing": "quarterly", "installment": 5500, "status": "active", "start": "2024-08-21", "renewal": "2026-10-11", "lastVisit": "2026-04-26", "nextVisit": "2026-05-26", "access": "", "priority": "normal", "confirmedTime": "07:00", "confirmedDay": null, "notes": "", "lat": -28.028663, "lng": 153.438978, "createdAt": "2025-02-04T00:00:00.000Z", "visits": []}, "contract_088": {"id": "contract_088", "company": "Surfers Paradise SLSC", "address": "51 Park Rd, Surfers Paradise QLD 4225", "suburb": "Surfers Paradise", "postcode": "4219", "ftype": "Hospitality / Hotel", "sqm": 120, "contact": "Site Manager", "phone": "07 5548 6881", "email": "surfersparad@email.com.au", "tech": "emp_003", "price": 3600, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 900, "status": "active", "start": "2024-09-03", "renewal": "2026-10-11", "lastVisit": "2026-04-13", "nextVisit": "2026-05-13", "access": "", "priority": "normal", "confirmedTime": "07:30", "confirmedDay": null, "notes": "", "lat": -28.006998, "lng": 153.438906, "createdAt": "2025-06-16T00:00:00.000Z", "visits": []}, "contract_089": {"id": "contract_089", "company": "Burleigh Heads SLSC", "address": "71 Main St, Burleigh Heads QLD 4228", "suburb": "Burleigh Heads", "postcode": "4229", "ftype": "Hospitality / Hotel", "sqm": 15000, "contact": "Manager", "phone": "07 5577 9138", "email": "burleighhead@email.com.au", "tech": "emp_003", "price": 3200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2025-06-25", "renewal": "2026-09-11", "lastVisit": "2026-04-21", "nextVisit": "2026-05-21", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.075441, "lng": 153.458165, "createdAt": "2025-04-19T00:00:00.000Z", "visits": []}, "contract_090": {"id": "contract_090", "company": "Currumbin SLSC", "address": "174 Surf Pde, Currumbin QLD 4214", "suburb": "Currumbin", "postcode": "4227", "ftype": "Hospitality / Hotel", "sqm": 15000, "contact": "Manager", "phone": "07 5580 1645", "email": "currumbinsls@email.com.au", "tech": "emp_002", "price": 3000, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 750, "status": "active", "start": "2025-06-02", "renewal": "2027-01-09", "lastVisit": "2026-04-29", "nextVisit": "2026-05-29", "access": "Call ahead 30 minutes", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.133268, "lng": 153.492418, "createdAt": "2024-08-29T00:00:00.000Z", "visits": []}, "contract_091": {"id": "contract_091", "company": "Palm Beach SLSC", "address": "76 Commerce Ave, Palm Beach QLD 4223", "suburb": "Palm Beach", "postcode": "4219", "ftype": "Hospitality / Hotel", "sqm": 200, "contact": "Site Manager", "phone": "07 5516 9837", "email": "palmbeachsls@email.com.au", "tech": "emp_001", "price": 2800, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2025-04-05", "renewal": "2027-02-08", "lastVisit": "2026-04-11", "nextVisit": "2026-05-11", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.114353, "lng": 153.470803, "createdAt": "2025-07-09T00:00:00.000Z", "visits": []}, "contract_092": {"id": "contract_092", "company": "Biggera Waters IGA", "address": "124 Surf Pde, Biggera Waters QLD 4219", "suburb": "Biggera Waters", "postcode": "4203", "ftype": "Food retail", "sqm": 800, "contact": "Manager", "phone": "07 5559 2233", "email": "biggerawater@email.com.au", "tech": "emp_003", "price": 3200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2025-11-21", "renewal": "2026-09-11", "lastVisit": "2026-04-19", "nextVisit": "2026-05-19", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.961861, "lng": 153.394494, "createdAt": "2024-05-24T00:00:00.000Z", "visits": []}, "contract_093": {"id": "contract_093", "company": "Labrador IGA", "address": "94 Main St, Labrador QLD 4222", "suburb": "Labrador", "postcode": "4221", "ftype": "Food retail", "sqm": 80, "contact": "Operations Manager", "phone": "07 5568 3024", "email": "labradoriga@email.com.au", "tech": "emp_002", "price": 3000, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 750, "status": "active", "start": "2025-01-04", "renewal": "2026-11-10", "lastVisit": "2026-04-27", "nextVisit": "2026-05-27", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.955655, "lng": 153.406092, "createdAt": "2024-05-26T00:00:00.000Z", "visits": []}, "contract_094": {"id": "contract_094", "company": "Oxenford Supermarket", "address": "96 Main St, Oxenford QLD 4217", "suburb": "Oxenford", "postcode": "4224", "ftype": "Food retail", "sqm": 2000, "contact": "Manager", "phone": "07 5579 6374", "email": "oxenfordsupe@email.com.au", "tech": "emp_001", "price": 2800, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2024-07-29", "renewal": "2026-09-11", "lastVisit": "2026-04-14", "nextVisit": "2026-05-14", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.898309, "lng": 153.366448, "createdAt": "2026-02-09T00:00:00.000Z", "visits": []}, "contract_095": {"id": "contract_095", "company": "Coomera Foodworks", "address": "78 Station St, Coomera QLD 4223", "suburb": "Coomera", "postcode": "4219", "ftype": "Food retail", "sqm": 120, "contact": "Site Manager", "phone": "07 5505 1609", "email": "coomerafoodw@email.com.au", "tech": "emp_001", "price": 2600, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 650, "status": "active", "start": "2025-06-07", "renewal": "2027-01-09", "lastVisit": "2026-04-22", "nextVisit": "2026-05-22", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.853523, "lng": 153.366188, "createdAt": "2026-01-05T00:00:00.000Z", "visits": []}, "contract_096": {"id": "contract_096", "company": "Nerang Foodworks", "address": "117 Commerce Ave, Nerang QLD 4227", "suburb": "Nerang", "postcode": "4229", "ftype": "Food retail", "sqm": 1200, "contact": "Facilities Manager", "phone": "07 5595 3531", "email": "nerangfoodwo@email.com.au", "tech": "emp_002", "price": 2200, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 550, "status": "active", "start": "2025-02-14", "renewal": "2027-04-09", "lastVisit": "2026-04-25", "nextVisit": "2026-05-25", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.993255, "lng": 153.331713, "createdAt": "2024-11-29T00:00:00.000Z", "visits": []}, "contract_097": {"id": "contract_097", "company": "Varsity Lakes Cafe", "address": "9 Station St, Varsity Lakes QLD 4221", "suburb": "Varsity Lakes", "postcode": "4204", "ftype": "Restaurant / Cafe", "sqm": 350, "contact": "Owner", "phone": "07 5556 4868", "email": "varsitylakes@email.com.au", "tech": "emp_002", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-04-08", "renewal": "2026-07-13", "lastVisit": "2026-04-12", "nextVisit": "2026-05-12", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.071838, "lng": 153.39903, "createdAt": "2025-04-03T00:00:00.000Z", "visits": []}, "contract_098": {"id": "contract_098", "company": "Carrara Cafe Hub", "address": "16 Park Rd, Carrara QLD 4218", "suburb": "Carrara", "postcode": "4229", "ftype": "Restaurant / Cafe", "sqm": 350, "contact": "Manager", "phone": "07 5558 2501", "email": "carraracafeh@email.com.au", "tech": "emp_002", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2024-06-05", "renewal": "2026-09-11", "lastVisit": "2026-04-20", "nextVisit": "2026-05-20", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.030966, "lng": 153.370897, "createdAt": "2024-06-29T00:00:00.000Z", "visits": []}, "contract_099": {"id": "contract_099", "company": "Mudgeeraba Pie Shop", "address": "86 Industrial Dr, Mudgeeraba QLD 4214", "suburb": "Mudgeeraba", "postcode": "4205", "ftype": "Food retail", "sqm": 8000, "contact": "Site Manager", "phone": "07 5508 4394", "email": "mudgeerabapi@email.com.au", "tech": "emp_001", "price": 1600, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 400, "status": "active", "start": "2024-08-22", "renewal": "2026-09-11", "lastVisit": "2026-04-28", "nextVisit": "2026-05-28", "access": "Swipe card at reception", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.062578, "lng": 153.350012, "createdAt": "2025-05-13T00:00:00.000Z", "visits": []}, "contract_100": {"id": "contract_100", "company": "Tugun Kitchen", "address": "1 Commerce Ave, Tugun QLD 4214", "suburb": "Tugun", "postcode": "4217", "ftype": "Restaurant / Cafe", "sqm": 200, "contact": "Facilities Manager", "phone": "07 5532 3858", "email": "tugunkitchen@email.com.au", "tech": "emp_003", "price": 1800, "freq": "12", "timeOnSite": 0.75, "billing": "quarterly", "installment": 450, "status": "active", "start": "2025-12-23", "renewal": "2027-04-09", "lastVisit": "2026-04-15", "nextVisit": "2026-05-15", "access": "Call ahead 30 minutes", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.150049, "lng": 153.505011, "createdAt": "2025-12-01T00:00:00.000Z", "visits": []}, "contract_101": {"id": "contract_101", "company": "Coolangatta Kitchen", "address": "151 Commerce Ave, Coolangatta QLD 4210", "suburb": "Coolangatta", "postcode": "4202", "ftype": "Restaurant / Cafe", "sqm": 200, "contact": "Operations Manager", "phone": "07 5506 3076", "email": "coolangattak@email.com.au", "tech": "emp_001", "price": 2200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 550, "status": "active", "start": "2025-02-07", "renewal": "2027-02-08", "lastVisit": "2026-04-18", "nextVisit": "2026-05-18", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.169835, "lng": 153.546769, "createdAt": "2026-02-08T00:00:00.000Z", "visits": []}, "contract_102": {"id": "contract_102", "company": "Hope Island Storage", "address": "152 Main St, Hope Island QLD 4224", "suburb": "Hope Island", "postcode": "4210", "ftype": "Warehouse", "sqm": 5000, "contact": "Site Manager", "phone": "07 5578 1710", "email": "hopeislandst@email.com.au", "tech": "emp_002", "price": 2800, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2024-06-09", "renewal": "2027-02-08", "lastVisit": "2026-03-27", "nextVisit": "2026-05-26", "access": "Loading dock rear entrance", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.887034, "lng": 153.367241, "createdAt": "2024-12-31T00:00:00.000Z", "visits": []}, "contract_103": {"id": "contract_103", "company": "Helensvale Warehouse A", "address": "123 Surf Pde, Helensvale QLD 4222", "suburb": "Helensvale", "postcode": "4225", "ftype": "Warehouse", "sqm": 1200, "contact": "Manager", "phone": "07 5562 8267", "email": "helensvalewa@email.com.au", "tech": "emp_001", "price": 3400, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 850, "status": "active", "start": "2026-01-29", "renewal": "2026-07-13", "lastVisit": "2026-04-13", "nextVisit": "2026-05-13", "access": "After hours access \u2014 call owner", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.920719, "lng": 153.338217, "createdAt": "2024-07-31T00:00:00.000Z", "visits": []}, "contract_104": {"id": "contract_104", "company": "Helensvale Warehouse B", "address": "163 Business Blvd, Helensvale QLD 4227", "suburb": "Helensvale", "postcode": "4225", "ftype": "Warehouse", "sqm": 800, "contact": "Owner", "phone": "07 5576 9692", "email": "helensvalewa@email.com.au", "tech": "emp_002", "price": 3200, "freq": "12", "timeOnSite": 1.0, "billing": "quarterly", "installment": 800, "status": "active", "start": "2025-06-17", "renewal": "2027-01-09", "lastVisit": "2026-04-21", "nextVisit": "2026-05-21", "access": "", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -27.938686, "lng": 153.3425, "createdAt": "2024-08-03T00:00:00.000Z", "visits": []}, "contract_105": {"id": "contract_105", "company": "Burleigh Heads Warehouse", "address": "168 Station St, Burleigh Heads QLD 4227", "suburb": "Burleigh Heads", "postcode": "4229", "ftype": "Warehouse", "sqm": 350, "contact": "Owner", "phone": "07 5557 4743", "email": "burleighhead@email.com.au", "tech": "emp_002", "price": 4200, "freq": "6", "timeOnSite": 1.5, "billing": "quarterly", "installment": 1050, "status": "active", "start": "2025-02-15", "renewal": "2026-11-10", "lastVisit": "2026-03-30", "nextVisit": "2026-05-29", "access": "Tradesperson entrance on north side", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.093016, "lng": 153.459036, "createdAt": "2025-03-02T00:00:00.000Z", "visits": []}, "contract_106": {"id": "contract_106", "company": "Coolangatta Industrial", "address": "81 Station St, Coolangatta QLD 4218", "suburb": "Coolangatta", "postcode": "4202", "ftype": "Industrial", "sqm": 800, "contact": "Site Manager", "phone": "07 5587 8770", "email": "coolangattai@email.com.au", "tech": "emp_001", "price": 2800, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 700, "status": "active", "start": "2026-02-05", "renewal": "2026-07-13", "lastVisit": "2026-03-12", "nextVisit": "2026-05-11", "access": "Key in lockbox \u2014 code 4419", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.162408, "lng": 153.537251, "createdAt": "2026-01-09T00:00:00.000Z", "visits": []}, "contract_107": {"id": "contract_107", "company": "Palm Beach Industrial", "address": "34 Business Blvd, Palm Beach QLD 4211", "suburb": "Palm Beach", "postcode": "4219", "ftype": "Industrial", "sqm": 8000, "contact": "Facilities Manager", "phone": "07 5571 6400", "email": "palmbeachind@email.com.au", "tech": "emp_002", "price": 2600, "freq": "6", "timeOnSite": 1.0, "billing": "quarterly", "installment": 650, "status": "active", "start": "2024-05-28", "renewal": "2026-07-13", "lastVisit": "2026-03-20", "nextVisit": "2026-05-19", "access": "Report to security first", "priority": "normal", "confirmedTime": null, "confirmedDay": null, "notes": "", "lat": -28.127069, "lng": 153.483776, "createdAt": "2025-04-17T00:00:00.000Z", "visits": []}};
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function fmtDate(s){if(!s)return'—';try{return new Date(s+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});}catch(e){return s;}}
+function daysUntil(s){if(!s)return 9999;return Math.ceil((new Date(s+'T00:00:00')-new Date())/864e5);}
+function minsToTime(m){var h=Math.floor(m/60),mn=m%60;return('0'+h).slice(-2)+':'+('0'+mn).slice(-2);}
+function timeToMins(t){if(!t)return 540;var p=t.match(/(\d+):(\d+)/);return p?parseInt(p[1])*60+parseInt(p[2]):540;}
+function distKm(a,b,c,d){var R=6371,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;var x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)*Math.sin(dN/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function driveMins(km){return Math.round(km*2.5+5);}
+function dateStr(d){return d.toISOString().split('T')[0];}
+function sync(m,e){var el=document.getElementById('sync-flash');if(!el)return;el.textContent=m;el.style.color=e?'#f87171':'#4ade80';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(function(){el.style.opacity='0';},3500);}
+
+function getWeekStart(off){var d=new Date();var mon=new Date(d);mon.setDate(d.getDate()-((d.getDay()+6)%7)+off*7);mon.setHours(0,0,0,0);return mon;}
+function getWeekDays(off){var mon=getWeekStart(off);var days=[];for(var i=0;i<5;i++){var d=new Date(mon);d.setDate(mon.getDate()+i);days.push(d);}return days;}
+
+// ── NAVIGATION ───────────────────────────────────────────────────────
+function toggleSB(){
+  var sb=document.getElementById('sb');
+  var ov=document.getElementById('sb-overlay');
+  var isOpen=sb.classList.contains('show');
+  if(isOpen){sb.classList.remove('show');ov.classList.remove('show');}
+  else{sb.classList.add('show');ov.classList.add('show');}
+}
+function closeSB(){
+  document.getElementById('sb').classList.remove('show');
+  document.getElementById('sb-overlay').classList.remove('show');
+}
+
+function go(id){
+  // Close sidebar on mobile
+  closeSB();
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.nv').forEach(function(n){n.classList.remove('on');});
+  var pn=document.getElementById('pn-'+id);if(pn)pn.classList.add('on');
+  var nv=document.getElementById('nv-'+id);if(nv)nv.classList.add('on');
+  var titles={schedule:'Weekly schedule',contracts:'All contracts',alerts:'Alerts',live:'Live today'};
+  document.getElementById('pg-title').textContent=titles[id]||id;
+  var ab=document.getElementById('auto-btn');if(ab)ab.style.display=id==='schedule'?'':'none';
+  if(id==='contracts'){renderTechFilters();renderContracts();}
+  if(id==='alerts')renderAlerts();
+  if(id==='live')loadLive();
+  window.scrollTo(0,0);
+}
+
+function openMo(id){document.getElementById(id).classList.add('open');}
+function closeMo(id){document.getElementById(id).classList.remove('open');}
+
+// ── LOAD ALL DATA ────────────────────────────────────────────────────
+function loadAll(){
+  sync('Loading...');
+  var done=0,need=2;
+  function tick(){if(++done>=need){buildScheduleView();updateStats();renderTechFilters();}}
+
+  fbR('pp_employees',function(err,d){
+    if(!err&&d&&Object.keys(d).length>=Object.keys(SEED_EMPLOYEES).length){EMP=d;}
+    else{EMP=SEED_EMPLOYEES;if(!err)fbW('pp_employees',SEED_EMPLOYEES,null);}
+    tick();
+  });
+  fbR('pp_contracts',function(err,d){
+    var sc=Object.keys(SEED_CONTRACTS).length;
+    if(!err&&d&&Object.keys(d).length>=sc){CONTRACTS=d;}
+    else{CONTRACTS=SEED_CONTRACTS;fbW('pp_contracts',SEED_CONTRACTS,null);}
+    tick();
+  });
+
+  // Load SCHEDULES back from Firebase for each tech + current week
+  // This is the critical fix — reload persisted schedules
+  loadSchedulesFromFirebase();
+
+  fbR('pp_job_outcomes',function(err,d){OUTCOMES=d?toArr(d).filter(Boolean):[];checkAlerts();});
+  fbR('pp_planner_alerts',function(err,d){
+    ALERTS_DATA=d?toArr(d).filter(Boolean):[];
+    var nb=document.getElementById('nb-al');
+    if(nb){nb.textContent=ALERTS_DATA.length;nb.style.display=ALERTS_DATA.length?'':'none';}
+    document.getElementById('st-alerts').textContent=ALERTS_DATA.length;
+  });
+}
+
+function loadSchedulesFromFirebase(){
+  // Read schedules for all techs for current week from Firebase
+  var days=getWeekDays(weekOffset);
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  if(!techs.length)return;
+
+  var loaded=0,total=techs.length*days.length;
+  function onLoad(){loaded++;if(loaded>=total){buildScheduleView();updateStats();}}
+
+  techs.forEach(function(tech){
+    var safeId=(tech.id||'').replace(/\W/g,'_');
+    days.forEach(function(day){
+      var ds=dateStr(day);
+      fbR('pp_schedule_'+safeId+'_'+ds,function(err,data){
+        if(!err&&data&&data.jobs&&data.jobs.length){
+          if(!SCHEDULES[tech.id])SCHEDULES[tech.id]={};
+          SCHEDULES[tech.id][ds]=data.jobs;
+          // Auto-promote: if this is today's dated schedule,
+          // also write to today path so tech app can read it
+          var todayStr=new Date().toISOString().split('T')[0];
+          if(ds===todayStr){
+            fbW('pp_schedule_today_'+safeId,data,null);
+          }
+        }
+        onLoad();
+      });
+    });
+  });
+}
+
+// ── WEEK NAVIGATION ──────────────────────────────────────────────────
+function changeWeek(dir){
+  weekOffset+=dir;
+  SCHEDULES={};// Clear in-memory, will reload from Firebase
+  updateWeekLabel();
+  loadSchedulesFromFirebase();
+}
+
+function updateWeekLabel(){
+  var days=getWeekDays(weekOffset);
+  var label=days[0].toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' – '+days[4].toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+  if(weekOffset===0)label='This week: '+label;
+  else if(weekOffset===1)label='Next week: '+label;
+  else if(weekOffset===-1)label='Last week: '+label;
+  document.getElementById('week-label').textContent=label;
+}
+
+// ── AUTO SCHEDULER ───────────────────────────────────────────────────
+function autoScheduleAll(){
+  var btn=document.getElementById('auto-btn');btn.textContent='Scheduling...';btn.disabled=true;
+  document.getElementById('sched-wrap').innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Building optimal schedules...</div>';
+
+  var days=getWeekDays(weekOffset);
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  var allContracts=Object.values(CONTRACTS).filter(function(c){return c&&c.status==='active';});
+
+  SCHEDULES={};
+  techs.forEach(function(t){SCHEDULES[t.id]={};days.forEach(function(d){SCHEDULES[t.id][dateStr(d)]=[];});});
+
+  // Schedule each day across ALL techs together
+  days.forEach(function(day){
+    scheduleDayAll(techs,day,allContracts);
+  });
+
+  // Save to Firebase
+  var saved=0,total=techs.length*days.length;
+  techs.forEach(function(tech){
+    var safeId=(tech.id||'').replace(/\W/g,'_');
+    days.forEach(function(day){
+      var ds=dateStr(day);
+      var payload={date:ds,techId:tech.id,techName:tech.name,jobs:SCHEDULES[tech.id][ds]||[],scheduledAt:new Date().toISOString()};
+      fbW('pp_schedule_'+safeId+'_'+ds,payload,function(){
+        saved++;
+        if(saved>=total){
+          sync('Schedules saved ✓');
+          btn.textContent='⚡ Auto-schedule';btn.disabled=false;
+          buildScheduleView();updateStats();
+        }
+      });
+      var today=new Date().toISOString().split('T')[0];
+      if(ds===today)fbW('pp_schedule_today_'+safeId,payload,null);
+    });
+  });
+
+  buildScheduleView();updateStats();
+}
+
+// ── SUBURB COORDINATES ────────────────────────────────────────────────
+var SUBURB_COORDS={
+  'Southport':[-27.994,153.398],'Robina':[-28.073,153.380],'Hope Island':[-27.886,153.370],
+  'Helensvale':[-27.930,153.347],'Coomera':[-27.860,153.358],'Nerang':[-28.001,153.339],
+  'Surfers Paradise':[-28.002,153.432],'Broadbeach':[-28.032,153.431],'Bundall':[-28.004,153.410],
+  'Molendinar':[-27.980,153.365],'Ashmore':[-28.010,153.370],'Arundel':[-27.950,153.355],
+  'Labrador':[-27.965,153.400],'Main Beach':[-27.972,153.427],'Biggera Waters':[-27.957,153.388],
+  'Runaway Bay':[-27.942,153.395],'Yatala':[-27.736,153.237],'Carrara':[-28.039,153.368],
+  'Parkwood':[-28.055,153.361],'Varsity Lakes':[-28.070,153.390],'Mudgeeraba':[-28.072,153.359],
+  'Burleigh Heads':[-28.085,153.455],'Palm Beach':[-28.119,153.479],'Coolangatta':[-28.167,153.541],
+  'Currumbin':[-28.136,153.490],'Tugun':[-28.143,153.497],'Bilinga':[-28.162,153.505],
+  'Oxenford':[-27.900,153.360],'Upper Coomera':[-27.880,153.340],'Mermaid Beach':[-28.046,153.440]
+};
+
+function getCoords(c){
+  if(c.lat&&c.lng)return[c.lat,c.lng];
+  return SUBURB_COORDS[c.suburb]||[-28.0,153.40];
+}
+
+function techCoords(tech){
+  return SUBURB_COORDS[tech.suburb]||[-28.0,153.40];
+}
+
+// Returns minutes a tech is busy up to a given time
+function techFreeAt(techId,ds,fromMins){
+  var jobs=SCHEDULES[techId]&&SCHEDULES[techId][ds]||[];
+  // Find the latest end time of any job before or at fromMins
+  var latest=fromMins;
+  jobs.forEach(function(j){if(j.endMins>latest)latest=j.endMins;});
+  return latest;
+}
+
+// Find where a tech's last job ends (their current position + time)
+function techStatus(techId,ds){
+  var jobs=(SCHEDULES[techId]&&SCHEDULES[techId][ds])||[];
+  var realJobs=jobs.filter(function(j){return!j.isLunch;});
+  if(!realJobs.length){
+    // At home
+    var home=techCoords(EMP[techId]||{});
+    return{lat:home[0],lng:home[1],freeMins:480,totalH:0};
+  }
+  var last=realJobs[realJobs.length-1];
+  return{
+    lat:last.lat||((SUBURB_COORDS[last.suburb]||[])[0]||-28.0),
+    lng:last.lng||((SUBURB_COORDS[last.suburb]||[])[1]||153.40),
+    freeMins:last.endMins,
+    totalH:realJobs.reduce(function(a,j){return a+(j.durationH||0);},0)
+  };
+}
+
+// Check if adding a job at time t for duration dur conflicts with existing confirmed jobs
+function hasConflict(techId,ds,startMins,endMins){
+  var jobs=(SCHEDULES[techId]&&SCHEDULES[techId][ds])||[];
+  return jobs.some(function(j){
+    if(j.isLunch)return false;
+    return startMins<j.endMins+10&&endMins>j.startMins-10;
+  });
+}
+
+// Add a job to a tech's schedule for a day
+function addJobToSchedule(techId,ds,job){
+  if(!SCHEDULES[techId])SCHEDULES[techId]={};
+  if(!SCHEDULES[techId][ds])SCHEDULES[techId][ds]=[];
+  SCHEDULES[techId][ds].push(job);
+  SCHEDULES[techId][ds].sort(function(a,b){return a.startMins-b.startMins;});
+}
+
+// ── MAIN SCHEDULER: allocates ALL contracts for one day across all techs ──
+function scheduleDayAll(techs,day,allContracts){
+  var ds=dateStr(day);
+  var dayNames=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  var dow=dayNames[day.getDay()];
+  var DAY_START=480,DAY_END=1020; // 8am-5pm
+
+  // Find all contracts due this day
+  var dueToday=allContracts.filter(function(c){
+    if(!c.nextVisit&&!c.confirmedDay)return false;
+    if(c.nextVisit===ds)return true;
+    // confirmedDay: only if nextVisit falls in same week as ds
+    if(c.confirmedDay&&c.confirmedDay.toLowerCase()===dow){
+      var nv=new Date(c.nextVisit+'T12:00:00');
+      var dayDt=new Date(ds+'T12:00:00');
+      var wMon=new Date(dayDt);wMon.setDate(dayDt.getDate()-((dayDt.getDay()+6)%7));
+      var wFri=new Date(wMon);wFri.setDate(wMon.getDate()+4);
+      return nv>=wMon&&nv<=wFri;
+    }
+    return false;
+  });
+
+  if(!dueToday.length)return;
+
+  // Separate confirmed-time and flexible
+  var confirmed=dueToday.filter(function(c){return c.confirmedTime&&c.confirmedTime.trim();});
+  var flexible=dueToday.filter(function(c){return!c.confirmedTime||!c.confirmedTime.trim();});
+
+  // Sort confirmed by time
+  confirmed.sort(function(a,b){return timeToMins(a.confirmedTime)-timeToMins(b.confirmedTime);});
+
+  // STEP 1: Place confirmed-time jobs
+  // Assign each to the nearest available tech at that time
+  confirmed.forEach(function(c){
+    var t=timeToMins(c.confirmedTime);
+    var dur=Math.round((c.timeOnSite||1)*60);
+    var cCoords=getCoords(c);
+
+    // Find best tech: nearest to job location AND free at that time
+    var bestTech=null,bestScore=Infinity;
+    techs.forEach(function(tech){
+      // Check if tech is free at this time
+      if(hasConflict(tech.id,ds,t,t+dur))return;
+      // Check day cap
+      var status=techStatus(tech.id,ds);
+      if(status.totalH+(c.timeOnSite||1)>9)return; // 9h max
+      // Distance from tech's last location to this job
+      var dist=distKm(status.lat,status.lng,cCoords[0],cCoords[1]);
+      var travelMins=driveMins(dist);
+      // Can they get there in time?
+      if(status.freeMins+travelMins>t+15)return; // can't make it
+      var score=dist;
+      if(score<bestScore){bestScore=score;bestTech=tech;}
+    });
+
+    if(!bestTech){
+      // No tech available — assign to least-loaded tech that is physically free
+      techs.forEach(function(tech){
+        if(hasConflict(tech.id,ds,t,t+dur))return;
+        var status=techStatus(tech.id,ds);
+        var score=status.totalH;
+        if(score<bestScore){bestScore=score;bestTech=tech;}
+      });
+    }
+
+    if(bestTech){
+      addJobToSchedule(bestTech.id,ds,{
+        id:'j_'+Date.now()+'_c_'+Math.random().toString(36).slice(2,5),
+        contractId:c.id,company:c.company,suburb:c.suburb,address:c.address,
+        phone:c.phone,access:c.access,ftype:c.ftype,freq:c.freq,
+        lat:cCoords[0],lng:cCoords[1],
+        startMins:t,endMins:t+dur,durationH:c.timeOnSite||1,
+        confirmed:true,confirmedTime:c.confirmedTime,confirmedDay:c.confirmedDay||'',
+        scheduledTime:minsToTime(t),status:'pending',priority:c.priority||'normal'
+      });
+    }
+  });
+
+  // STEP 2: Route flexible jobs
+  // Use nearest-neighbour across ALL techs together
+  // Each iteration: pick the unscheduled job that can be done earliest by any tech
+  var remaining=flexible.slice();
+
+  while(remaining.length){
+    var bestJob=null,bestTech=null,bestStart=Infinity,bestDist=Infinity;
+
+    remaining.forEach(function(c){
+      var cCoords=getCoords(c);
+      var dur=Math.round((c.timeOnSite||1)*60);
+
+      techs.forEach(function(tech){
+        var status=techStatus(tech.id,ds);
+        if(status.totalH+(c.timeOnSite||1)>9)return; // max 9h/day
+
+        var dist=distKm(status.lat,status.lng,cCoords[0],cCoords[1]);
+        var travel=driveMins(dist);
+        var start=Math.max(DAY_START,status.freeMins+travel);
+
+        // Push past any confirmed job conflicts
+        var iterations=0;
+        while(iterations<15){
+          iterations++;
+          var blocked=false;
+          var jobs=(SCHEDULES[tech.id]&&SCHEDULES[tech.id][ds])||[];
+          for(var j=0;j<jobs.length;j++){
+            if(start<jobs[j].endMins+10&&start+dur>jobs[j].startMins-10){
+              start=jobs[j].endMins+travel+5;
+              blocked=true;break;
+            }
+          }
+          if(!blocked)break;
+        }
+
+        if(start+dur>DAY_END)return; // doesn't fit today
+
+        // Score: earlier start wins; tiebreak by distance
+        if(start<bestStart||(start===bestStart&&dist<bestDist)){
+          bestStart=start;bestDist=dist;bestJob=c;bestTech=tech;
+        }
+      });
+    });
+
+    if(!bestJob||!bestTech)break;
+
+    var dur=Math.round((bestJob.timeOnSite||1)*60);
+    var cCoords=getCoords(bestJob);
+    var status=techStatus(bestTech.id,ds);
+    var dist=distKm(status.lat,status.lng,cCoords[0],cCoords[1]);
+    var travel=driveMins(dist);
+
+    // Insert lunch break if crossing midday
+    var dayJobs=(SCHEDULES[bestTech.id]&&SCHEDULES[bestTech.id][ds])||[];
+    var hasLunch=dayJobs.some(function(j){return j.isLunch;});
+    if(!hasLunch&&bestStart>=720&&bestStart<750){bestStart=750;}
+    if(!hasLunch&&bestStart>720&&!dayJobs.some(function(j){return j.isLunch;})){
+      addJobToSchedule(bestTech.id,ds,{
+        id:'lunch_'+bestTech.id,company:'Lunch break',startMins:720,endMins:750,
+        scheduledTime:'12:00',durationH:0.5,isLunch:true,status:'break'
+      });
+    }
+
+    addJobToSchedule(bestTech.id,ds,{
+      id:'j_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+      contractId:bestJob.id,company:bestJob.company,suburb:bestJob.suburb,
+      address:bestJob.address,phone:bestJob.phone,access:bestJob.access,
+      ftype:bestJob.ftype,freq:bestJob.freq,
+      lat:cCoords[0],lng:cCoords[1],
+      startMins:bestStart,endMins:bestStart+dur,durationH:bestJob.timeOnSite||1,
+      confirmed:false,driveFromPrev:travel,
+      scheduledTime:minsToTime(bestStart),status:'pending',priority:bestJob.priority||'normal'
+    });
+
+    remaining.splice(remaining.indexOf(bestJob),1);
+  }
+
+  // Add lunch to any tech who has jobs but no lunch yet
+  techs.forEach(function(tech){
+    var dayJobs=(SCHEDULES[tech.id]&&SCHEDULES[tech.id][ds])||[];
+    var hasLunch=dayJobs.some(function(j){return j.isLunch;});
+    var hasJobs=dayJobs.some(function(j){return!j.isLunch;});
+    if(hasJobs&&!hasLunch){
+      addJobToSchedule(tech.id,ds,{
+        id:'lunch_'+tech.id,company:'Lunch break',startMins:720,endMins:750,
+        scheduledTime:'12:00',durationH:0.5,isLunch:true,status:'break'
+      });
+    }
+  });
+}
+
+// Legacy scheduleDay kept for manual single-tech operations
+function scheduleDay(tech,day,allContracts){
+  scheduleDayAll([tech],day,allContracts);
+  return SCHEDULES[tech.id]&&SCHEDULES[tech.id][dateStr(day)]||[];
+}
+
+
+// ── BUILD SCHEDULE VIEW ──────────────────────────────────────────────
+function buildScheduleView(){
+  updateWeekLabel();
+  var wrap=document.getElementById('sched-wrap');if(!wrap)return;
+  var days=getWeekDays(weekOffset);
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  if(!techs.length){wrap.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted)">No technicians found.</div>';return;}
+
+  wrap.innerHTML='';
+
+  techs.forEach(function(tech){
+    var techSched=SCHEDULES[tech.id]||{};
+    var allJobs=[];days.forEach(function(d){allJobs=allJobs.concat((techSched[dateStr(d)]||[]).filter(function(j){return!j.isLunch;}));});
+    var totalH=allJobs.reduce(function(a,j){return a+(j.durationH||0);},0);
+    var pct=Math.round(totalH/40*100);
+    var pCls=pct>100?'prog-over':pct>85?'prog-warn':'prog-ok';
+    var isOpen=EXPANDED[tech.id]!==false;// default open
+
+    var board=document.createElement('div');board.className='tech-board';
+
+    // Header
+    var hdr=document.createElement('div');hdr.className='tech-board-hdr';
+    hdr.innerHTML='<div class="tech-av">'+tech.avatar+'</div>'+
+      '<div class="tech-hdr-info"><div class="tech-hdr-name">'+tech.name+'</div>'+
+      '<div class="tech-hdr-meta">'+tech.suburb+' &nbsp;·&nbsp; '+allJobs.length+' jobs &nbsp;·&nbsp; '+totalH.toFixed(1)+'h</div>'+
+      '<div class="prog-bar" style="width:140px"><div class="prog-fill '+pCls+'" style="width:'+Math.min(pct,100)+'%"></div></div></div>'+
+      '<div class="tech-hdr-right">'+
+        '<button class="btn btn-b btn-sm" onclick="event.stopPropagation();openTechDetail(\''+tech.id+'\')" style="flex-shrink:0">Profile</button>'+
+        '<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openAddJobForTech(\''+tech.id+'\')" style="flex-shrink:0">+ Add</button>'+
+        '<span class="tech-chevron'+(isOpen?' open':'')+'" id="chev-'+tech.id+'">▾</span>'+
+      '</div>';
+    hdr.onclick=(function(tid){return function(){toggleTechBoard(tid);};})(tech.id);
+    board.appendChild(hdr);
+
+    // Body
+    var body=document.createElement('div');body.className='tech-body'+(isOpen?' open':'');body.id='tb-'+tech.id;
+
+    // No action bar needed - send buttons are on each day row
+
+    // Days
+    days.forEach(function(day){
+      var ds=dateStr(day);
+      var dayJobs=(techSched[ds]||[]);
+      var realJobs=dayJobs.filter(function(j){return!j.isLunch;});
+      var dayH=realJobs.reduce(function(a,j){return a+(j.durationH||0);},0);
+      var dayName=day.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+
+      var dg=document.createElement('div');dg.className='day-group';
+
+      var dhdr=document.createElement('div');dhdr.className='day-hdr';
+      dhdr.innerHTML='<span class="day-name">'+dayName+'</span>'+
+        '<div class="day-meta">'+
+          (realJobs.length?'<span class="day-count">'+realJobs.length+' jobs · '+dayH.toFixed(1)+'h</span>':'<span style="font-size:11px;color:var(--muted)">No jobs</span>')+
+          '<button class="day-add" onclick="openAddJobForDay(\''+tech.id+'\',\''+ds+'\')">+ Add</button>'+
+          (realJobs.length?'<button class="day-add" style="background:rgba(37,99,235,.12);color:#60a5fa;border-color:rgba(37,99,235,.2);" onclick="sendTodaySchedule(\''+tech.id+'\',\''+ds+'\')">📧 Send</button>':'')+
+        '</div>';
+      dg.appendChild(dhdr);
+
+      if(!dayJobs.length){
+        var empty=document.createElement('div');empty.className='empty-day';empty.textContent='Rest day';
+        dg.appendChild(empty);
+      } else {
+        dayJobs.forEach(function(job){
+          var row=document.createElement('div');
+          row.className='job-row'+(job.confirmed?' confirmed':'')+(job.isLunch?' lunch':'');
+          var timeDiv=document.createElement('div');timeDiv.className='jr-time'+(job.confirmed?' fixed':'');
+          timeDiv.innerHTML=job.scheduledTime||minsToTime(job.startMins);
+          if(job.confirmed)timeDiv.innerHTML+='<div style="font-size:8px;color:var(--amber);margin-top:1px">FIXED</div>';
+          var info=document.createElement('div');info.className='jr-info';
+          if(job.isLunch){
+            info.innerHTML='<div class="jr-co" style="color:var(--muted)">🍽 Lunch break</div>';
+          } else {
+            var priDot=job.priority==='high'?'<span style="color:#f87171;font-size:10px;margin-right:3px">●</span>':'';
+            info.innerHTML='<div class="jr-co">'+priDot+job.company+'</div>'+
+              '<div class="jr-meta">'+job.suburb+(job.driveFromPrev?' · 🚗 '+job.driveFromPrev+'min':'')+(job.access?' · 🔑 '+job.access:'')+'</div>';
+          }
+          var right=document.createElement('div');right.className='jr-right';
+          if(!job.isLunch){
+            var dur=document.createElement('div');dur.className='jr-dur';dur.textContent=job.durationH+'h';
+            var more=document.createElement('button');more.className='jr-more';more.textContent='•••';
+            more.onclick=(function(j,tid,ds2){return function(e){e.stopPropagation();openJobDetail(j,tid,ds2);};})(job,tech.id,ds);
+            right.appendChild(dur);right.appendChild(more);
+          }
+          row.appendChild(timeDiv);row.appendChild(info);row.appendChild(right);
+          if(!job.isLunch)row.onclick=(function(j,tid,ds2){return function(){openJobDetail(j,tid,ds2);};})(job,tech.id,ds);
+          dg.appendChild(row);
+        });
+      }
+      body.appendChild(dg);
+    });
+
+    board.appendChild(body);
+    wrap.appendChild(board);
+  });
+}
+
+function toggleTechBoard(techId){
+  var body=document.getElementById('tb-'+techId);
+  var chev=document.getElementById('chev-'+techId);
+  if(!body)return;
+  var isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(chev)chev.classList.toggle('open',!isOpen);
+  EXPANDED[techId]=!isOpen;
+}
+
+// ── STATS ────────────────────────────────────────────────────────────
+function updateStats(){
+  var days=getWeekDays(weekOffset);
+  var allJobs=[];
+  Object.values(SCHEDULES).forEach(function(ts){days.forEach(function(d){allJobs=allJobs.concat((ts[dateStr(d)]||[]).filter(function(j){return!j.isLunch;}));});});
+  var totalH=allJobs.reduce(function(a,j){return a+(j.durationH||0);},0);
+  document.getElementById('st-jobs').textContent=allJobs.length||'—';
+  document.getElementById('st-hrs').textContent=totalH?totalH.toFixed(1)+'h':'—';
+  // Unscheduled = contracts due this week not in schedule
+  var scheduledCos=new Set(allJobs.map(function(j){return j.company;}));
+  var due=Object.values(CONTRACTS).filter(function(c){return c&&c.status==='active'&&days.some(function(d){return c.nextVisit===dateStr(d);});});
+  var unsched=due.filter(function(c){return!scheduledCos.has(c.company);}).length;
+  document.getElementById('st-unsched').textContent=unsched||'0';
+}
+
+// ── JOB DETAIL MODAL ─────────────────────────────────────────────────
+function openJobDetail(job,techId,ds){
+  var tech=EMP[techId];
+  document.getElementById('mo-job-title').textContent=job.company;
+  var body='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Tech</div><div style="font-size:13px;font-weight:600;">'+(tech?tech.name:'?')+'</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Time</div><div style="font-size:13px;font-weight:600;">'+(job.scheduledTime||'TBC')+(job.confirmed?' <span style="color:var(--amber);font-size:10px">FIXED</span>':'')+'</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Suburb</div><div style="font-size:13px;font-weight:600;">'+(job.suburb||'—')+'</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Duration</div><div style="font-size:13px;font-weight:600;color:var(--ac);">'+(job.durationH||1)+'h</div></div>';
+  body+='</div>';
+  if(job.address)body+='<div style="font-size:13px;color:var(--muted);margin-bottom:6px">📍 '+job.address+'</div>';
+  if(job.phone)body+='<div style="font-size:13px;color:var(--muted);margin-bottom:6px">📞 <a href="tel:'+job.phone+'" style="color:var(--ac)">'+job.phone+'</a></div>';
+  if(job.access)body+='<div style="background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.2);border-radius:7px;padding:8px 12px;font-size:12px;color:#fbbf24;margin-bottom:8px">🔑 '+job.access+'</div>';
+  if(job.driveFromPrev)body+='<div style="font-size:12px;color:var(--muted)">🚗 ~'+job.driveFromPrev+' min drive from previous</div>';
+  document.getElementById('mo-job-body').innerHTML=body;
+  var footer=document.getElementById('mo-job-footer');footer.innerHTML='';
+  var discardBtn=document.createElement('button');discardBtn.className='btn btn-r';discardBtn.textContent='Discard today';
+  discardBtn.onclick=(function(j,tid,d2){return function(){discardJob(j,tid,d2);};})(job,techId,ds);
+  var reassignBtn=document.createElement('button');reassignBtn.className='btn btn-a';reassignBtn.textContent='Reassign';
+  reassignBtn.onclick=(function(j,tid,d2){return function(){closeMo('mo-job');openReassign(j,tid,d2);};})(job,techId,ds);
+  var sendBtn=document.createElement('button');sendBtn.className='btn btn-g';sendBtn.textContent='Send to tech';
+  sendBtn.onclick=(function(j,tid,d2){return function(){closeMo('mo-job');openSendTime(j,tid,d2);};})(job,techId,ds);
+  var closeBtn=document.createElement('button');closeBtn.className='btn btn-gr';closeBtn.textContent='Close';closeBtn.onclick=function(){closeMo('mo-job');};
+  footer.appendChild(discardBtn);footer.appendChild(reassignBtn);footer.appendChild(sendBtn);footer.appendChild(closeBtn);
+  openMo('mo-job');
+}
+
+function discardJob(job,techId,ds){
+  if(!confirm('Discard '+job.company+' today? It stays in the contract list for next scheduling.'))return;
+  if(SCHEDULES[techId]&&SCHEDULES[techId][ds])SCHEDULES[techId][ds]=SCHEDULES[techId][ds].filter(function(j){return j.id!==job.id;});
+  saveDay(techId,ds);
+  closeMo('mo-job');buildScheduleView();sync('Job removed from today');
+}
+
+function openReassign(job,fromTechId,ds){
+  _reassignRef={job:job,fromTechId:fromTechId,ds:ds};
+  document.getElementById('reassign-desc').textContent=job.company+' — '+job.suburb;
+  var sel=document.getElementById('ra-tech');
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  sel.innerHTML=techs.map(function(t){return'<option value="'+t.id+'"'+(t.id===fromTechId?' selected':'')+'>'+t.name+'</option>';}).join('');
+  document.getElementById('ra-time').value=job.scheduledTime||'09:00';
+  openMo('mo-reassign');
+}
+
+function confirmReassign(){
+  if(!_reassignRef)return;
+  var toId=document.getElementById('ra-tech').value;
+  var newTime=document.getElementById('ra-time').value;
+  var job=_reassignRef.job,fromId=_reassignRef.fromTechId,ds=_reassignRef.ds;
+  var newMins=timeToMins(newTime);
+  var newEnd=newMins+Math.round((job.durationH||1)*60);
+  // Conflict check
+  var targetJobs=(SCHEDULES[toId]&&SCHEDULES[toId][ds])||[];
+  var conflict=targetJobs.find(function(j){return j.confirmed&&j.startMins<newEnd+10&&j.endMins>newMins-10;});
+  if(conflict){alert('Cannot schedule at '+newTime+' — conflicts with confirmed job: '+conflict.company+' at '+conflict.scheduledTime+'\n\nConfirmed jobs cannot be moved.');return;}
+  // Remove from old tech
+  if(SCHEDULES[fromId]&&SCHEDULES[fromId][ds])SCHEDULES[fromId][ds]=SCHEDULES[fromId][ds].filter(function(j){return j.id!==job.id;});
+  // Add to new tech
+  var updated=Object.assign({},job,{startMins:newMins,endMins:newEnd,scheduledTime:newTime});
+  if(!SCHEDULES[toId])SCHEDULES[toId]={};
+  if(!SCHEDULES[toId][ds])SCHEDULES[toId][ds]=[];
+  SCHEDULES[toId][ds].push(updated);
+  SCHEDULES[toId][ds].sort(function(a,b){return a.startMins-b.startMins;});
+  saveDay(fromId,ds);saveDay(toId,ds);
+  closeMo('mo-reassign');buildScheduleView();
+  sync('Reassigned to '+(EMP[toId]?EMP[toId].name:'tech'));
+}
+
+// SEND TIME MODAL (replaces window.prompt)
+function openSendTime(job,techId,ds){
+  _sendTimeRef={job:job,techId:techId,ds:ds};
+  document.getElementById('sendtime-desc').textContent='Setting time for '+job.company+' in '+(EMP[techId]?EMP[techId].name:'tech')+'\'s schedule.';
+  document.getElementById('sendtime-val').value=job.scheduledTime||'09:00';
+  openMo('mo-sendtime');
+}
+
+function confirmSendTime(){
+  if(!_sendTimeRef)return;
+  var newTime=document.getElementById('sendtime-val').value;
+  var job=_sendTimeRef.job,techId=_sendTimeRef.techId,ds=_sendTimeRef.ds;
+  var newMins=timeToMins(newTime);
+  var newEnd=newMins+Math.round((job.durationH||1)*60);
+  // Conflict check
+  var dayJobs=(SCHEDULES[techId]&&SCHEDULES[techId][ds])||[];
+  var conflict=dayJobs.find(function(j){return j.confirmed&&j.id!==job.id&&j.startMins<newEnd+10&&j.endMins>newMins-10;});
+  if(conflict){alert('Cannot perform — conflicts with confirmed job:\n"'+conflict.company+'" at '+conflict.scheduledTime+'.\n\nConfirmed jobs cannot be moved.');return;}
+  // Update time
+  if(SCHEDULES[techId]&&SCHEDULES[techId][ds]){
+    SCHEDULES[techId][ds]=SCHEDULES[techId][ds].map(function(j){
+      if(j.id===job.id)return Object.assign({},j,{startMins:newMins,endMins:newEnd,scheduledTime:newTime});
+      return j;
+    }).sort(function(a,b){return a.startMins-b.startMins;});
+  }
+  // Save and push to tech
+  var tech=EMP[techId];
+  saveDay(techId,ds);
+  // Push to today path for tech app
+  var today=new Date().toISOString().split('T')[0];
+  if(ds===today&&tech){
+    var safeId=(techId||'').replace(/\W/g,'_');
+    fbW('pp_schedule_today_'+safeId,{date:ds,techId:techId,techName:tech.name,jobs:SCHEDULES[techId][ds],sentAt:new Date().toISOString()},null);
+  }
+  closeMo('mo-sendtime');buildScheduleView();
+  sync('Updated and saved'+(ds===new Date().toISOString().split('T')[0]?' — pushed to tech app':''));
+}
+
+// ── SAVE A SINGLE DAY TO FIREBASE ────────────────────────────────────
+function saveDay(techId,ds){
+  var tech=EMP[techId];if(!tech)return;
+  var safeId=(techId||'').replace(/\W/g,'_');
+  var jobs=(SCHEDULES[techId]&&SCHEDULES[techId][ds])||[];
+  var payload={date:ds,techId:techId,techName:tech.name,jobs:jobs,savedAt:new Date().toISOString()};
+  // Always write to dated path — tech app reads this directly
+  fbW('pp_schedule_'+safeId+'_'+ds,payload,function(err){
+    if(!err)sync('Saved — tech app will update within 30s');
+  });
+  // Also write today path when scheduling today
+  var today=new Date().toISOString().split('T')[0];
+  if(ds===today){
+    fbW('pp_schedule_today_'+safeId,payload,null);
+  }
+}
+
+// ── TECH PROFILE MODAL ───────────────────────────────────────────────
+function openTechDetail(techId){
+  _currentTechId=techId;
+  var tech=EMP[techId];if(!tech)return;
+  document.getElementById('mo-tech-title').textContent=tech.name;
+  var lics=tech.licences||[];var inds=tech.inductions||[];
+  var body='<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'+
+    '<div style="width:48px;height:48px;border-radius:50%;background:rgba(22,163,74,.2);color:#4ade80;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;">'+tech.avatar+'</div>'+
+    '<div><div style="font-size:16px;font-weight:700;">'+tech.name+'</div><div style="font-size:12px;color:var(--muted);">'+tech.role+' · '+tech.suburb+'</div>'+
+    (tech.email?'<div style="font-size:12px;color:var(--muted);">📧 '+tech.email+'</div>':'')+
+    '</div></div>';
+  // Licences
+  body+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Licences</div>';
+  if(lics.length){
+    body+=lics.map(function(l){var d=daysUntil(l.expiry);var col=d<=0?'#f87171':d<=90?'#fbbf24':'#4ade80';return'<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:7px;margin-bottom:5px;"><div style="flex:1"><div style="font-size:13px;font-weight:500;">'+l.type+'</div><div style="font-size:11px;color:var(--muted);">'+l.number+'</div></div><div style="font-size:12px;font-weight:700;color:'+col+'">'+(d<=0?'EXPIRED':d<=90?d+'d left':fmtDate(l.expiry))+'</div></div>';}).join('');
+  } else {body+='<div style="font-size:13px;color:var(--muted);margin-bottom:10px">No licences on file.</div>';}
+  // Inductions
+  if(inds.length){
+    body+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 8px;">Inductions</div>';
+    body+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">'+inds.map(function(i){return'<span style="background:rgba(22,163,74,.1);color:#4ade80;border:1px solid rgba(22,163,74,.2);border-radius:20px;font-size:11px;padding:3px 10px;">✓ '+(typeof i==='string'?i:i.type||'')+'</span>';}).join('')+'</div>';
+  }
+  // Email edit (planner only)
+  body+='<div style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:10px 12px;font-size:12px;color:#60a5fa;margin-bottom:10px;">Planner can update email below to enable sending schedules.</div>';
+  body+='<div style="display:flex;gap:8px;align-items:center;"><input id="tech-email-edit" class="inp" style="flex:1" placeholder="Email address" value="'+(tech.email||'')+'"><button class="btn btn-b btn-sm" onclick="saveTechEmail(\''+techId+'\')">Save</button></div>';
+  document.getElementById('mo-tech-body').innerHTML=body;
+  openMo('mo-tech');
+}
+
+function saveTechEmail(techId){
+  var email=document.getElementById('tech-email-edit').value.trim();
+  if(!email){alert('Enter an email address.');return;}
+  if(!EMP[techId])return;
+  EMP[techId].email=email;
+  fbW('pp_employees',EMP,function(err){sync(err?'Failed':'Email saved ✓',!!err);});
+}
+
+// ── SEND TODAY'S SCHEDULE ────────────────────────────────────────────
+function sendTodaySchedule(techId,ds){
+  if(!techId)techId=_currentTechId;
+  var tech=EMP[techId];if(!tech)return;
+  if(!tech.email){alert('No email on file for '+tech.name+'.\nOpen their profile to add an email address.');return;}
+  if(!ds)ds=new Date().toISOString().split('T')[0];
+  var safeId=(techId||'').replace(/\W/g,'_');
+  var dayLabel=new Date(ds+'T12:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  fbR('pp_schedule_'+safeId+'_'+ds,function(err,data){
+    var jobs=data&&data.jobs?data.jobs:((SCHEDULES[techId]&&SCHEDULES[techId][ds])||[]);
+    var realJobs=jobs.filter(function(j){return!j.isLunch;});
+    if(!realJobs.length){alert('No jobs scheduled for '+tech.name+' on '+dayLabel+'.\n\nRun Auto-schedule first, or add jobs manually.');return;}
+    var subj='Your schedule for '+dayLabel+' — Pest Proof';
+    var body='Hi '+tech.name.split(' ')[0]+',\n\nHere is your schedule for '+dayLabel+':\n\n';
+    jobs.forEach(function(j){
+      if(j.isLunch){body+='12:00  Lunch break (30 min)\n\n';return;}
+      body+=(j.scheduledTime||'TBC')+'  '+j.company+'\n';
+      if(j.address)body+='       '+j.address+'\n';
+      if(j.access)body+='       Access: '+j.access+'\n';
+      if(j.phone)body+='       Ph: '+j.phone+'\n';
+      body+='       '+j.durationH+'h on site\n';
+      if(j.driveFromPrev)body+='       (~'+j.driveFromPrev+' min drive)\n';
+      body+='\n';
+    });
+    var totalH=realJobs.reduce(function(a,j){return a+(j.durationH||0);},0);
+    body+='Total: '+realJobs.length+' jobs, '+totalH+'h\n\nHave a great day!\nMarcus\nPest Proof — 0450 515 987';
+    window.location.href='mailto:'+tech.email+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+    sync('Email opened for '+tech.name);
+    closeMo('mo-tech');
+  });
+}
+
+// ── ADD JOB ──────────────────────────────────────────────────────────
+function openAddJob(){openAddJobForTech(null);}
+function openAddJobForTech(techId){
+  var sel=document.getElementById('aj-tech');
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  sel.innerHTML=techs.map(function(t){return'<option value="'+t.id+'"'+(techId&&t.id===techId?' selected':'')+'>'+t.name+'</option>';}).join('');
+  document.getElementById('aj-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('aj-company').value='';
+  document.getElementById('aj-address').value='';
+  document.getElementById('aj-access').value='';
+  document.getElementById('aj-notes').value='';
+  document.getElementById('aj-suggestions').style.display='none';
+  var title=techId&&EMP[techId]?'Add job for '+EMP[techId].name:'Add job manually';
+  document.getElementById('mo-addjob-title').textContent=title;
+  openMo('mo-addjob');
+}
+function openAddJobForDay(techId,ds){
+  openAddJobForTech(techId);
+  document.getElementById('aj-date').value=ds;
+}
+
+function filterAJCompany(val){
+  var sug=document.getElementById('aj-suggestions');
+  if(!val||val.length<2){sug.style.display='none';return;}
+  var matches=Object.values(CONTRACTS).filter(function(c){return c&&c.status==='active'&&c.company.toLowerCase().includes(val.toLowerCase());}).slice(0,8);
+  if(!matches.length){sug.style.display='none';return;}
+  sug.innerHTML=matches.map(function(c){return'<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--bd);" onmousedown="selectAJCompany(\''+c.company.replace(/'/g,'')+'\',\''+c.id+'\')">'+c.company+'<span style="font-size:11px;color:var(--muted);margin-left:8px;">'+c.suburb+'</span></div>';}).join('');
+  sug.style.display='block';
+}
+
+function selectAJCompany(name,ctId){
+  document.getElementById('aj-company').value=name;
+  document.getElementById('aj-suggestions').style.display='none';
+  var ct=CONTRACTS[ctId];
+  if(ct){
+    if(ct.address)document.getElementById('aj-address').value=ct.address+(ct.suburb?' — '+ct.suburb:'');
+    if(ct.access)document.getElementById('aj-access').value=ct.access;
+    if(ct.timeOnSite)document.getElementById('aj-dur').value=ct.timeOnSite;
+    if(ct.tech){var sel=document.getElementById('aj-tech');if(sel)sel.value=ct.tech;}
+  }
+}
+
+function saveAddedJob(){
+  var company=document.getElementById('aj-company').value.trim();
+  var techId=document.getElementById('aj-tech').value;
+  var date=document.getElementById('aj-date').value;
+  var time=document.getElementById('aj-time').value;
+  var dur=parseFloat(document.getElementById('aj-dur').value)||1;
+  if(!company){alert('Company name required.');return;}
+  if(!techId){alert('Select a technician.');return;}
+  if(!date){alert('Select a date.');return;}
+  var startMins=timeToMins(time);
+  var endMins=startMins+Math.round(dur*60);
+  // Conflict check
+  var existing=(SCHEDULES[techId]&&SCHEDULES[techId][date])||[];
+  var conflict=existing.find(function(j){return j.confirmed&&j.startMins<endMins+10&&j.endMins>startMins-10;});
+  if(conflict){alert('Conflicts with confirmed job: '+conflict.company+' at '+conflict.scheduledTime);return;}
+  var job={id:'manual_'+Date.now(),company:company,address:document.getElementById('aj-address').value,access:document.getElementById('aj-access').value,suburb:'',startMins:startMins,endMins:endMins,durationH:dur,scheduledTime:time,confirmed:false,notes:document.getElementById('aj-notes').value,status:'pending',manual:true};
+  if(!SCHEDULES[techId])SCHEDULES[techId]={};
+  if(!SCHEDULES[techId][date])SCHEDULES[techId][date]=[];
+  SCHEDULES[techId][date].push(job);
+  SCHEDULES[techId][date].sort(function(a,b){return a.startMins-b.startMins;});
+  // Save to Firebase immediately
+  saveDay(techId,date);
+  // Push to today if it's today
+  var today=new Date().toISOString().split('T')[0];
+  if(date===today){
+    var safeId=(techId||'').replace(/\W/g,'_');
+    var tech=EMP[techId];
+    if(tech)fbW('pp_schedule_today_'+safeId,{date:date,techId:techId,techName:tech.name,jobs:SCHEDULES[techId][date],sentAt:new Date().toISOString()},null);
+  }
+  closeMo('mo-addjob');buildScheduleView();
+  sync('Job added and saved ✓');
+}
+
+// ── CONTRACTS LIST ────────────────────────────────────────────────────
+function renderTechFilters(){
+  var sel=document.getElementById('ct-tech-f');if(!sel)return;
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  sel.innerHTML='<option value="">All techs</option>'+techs.map(function(t){return'<option value="'+t.id+'">'+t.name+'</option>';}).join('');
+}
+
+function renderContracts(){
+  var techF=(document.getElementById('ct-tech-f')||{}).value||'';
+  var dueF=(document.getElementById('ct-due-f')||{}).value||'';
+  var search=((document.getElementById('ct-search')||{}).value||'').toLowerCase();
+  var el=document.getElementById('ct-list');if(!el)return;
+  var arr=Object.values(CONTRACTS).filter(Boolean).filter(function(c){
+    if(c.status!=='active')return false;
+    if(techF&&c.tech!==techF)return false;
+    if(search&&!c.company.toLowerCase().includes(search))return false;
+    var d=daysUntil(c.nextVisit);
+    if(dueF==='overdue'&&d>=0)return false;
+    if(dueF==='week'&&(d<0||d>7))return false;
+    if(dueF==='month'&&(d<0||d>31))return false;
+    return true;
+  }).sort(function(a,b){return daysUntil(a.nextVisit)-daysUntil(b.nextVisit);});
+  var cc=document.getElementById('ct-count');if(cc)cc.textContent=arr.length+' contracts';
+  if(!arr.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No contracts match.</div>';return;}
+  el.innerHTML='';
+  arr.forEach(function(c){
+    var d=daysUntil(c.nextVisit);var tech=EMP[c.tech];
+    var dCls=d<0?'ov':d<=7?'sn':'ok';
+    var dText=d<0?Math.abs(d)+'d late':d===0?'Today':d===1?'Tmrw':d+'d';
+    var row=document.createElement('div');row.className='ct-row';
+    row.innerHTML='<div class="ct-due"><div class="ct-days '+dCls+'">'+dText+'</div><div class="ct-dl">'+(d<0?'OVERDUE':d===0?'TODAY':'DUE')+'</div></div>'+
+      '<div class="ct-info"><div class="ct-co">'+c.company+'</div><div class="ct-meta">'+c.suburb+' &nbsp;·&nbsp; '+c.ftype+(tech?' &nbsp;·&nbsp; '+tech.name:'')+(c.confirmedTime?' &nbsp;·&nbsp; <span style="color:var(--amber)">⏰ '+c.confirmedTime+(c.confirmedDay?' '+c.confirmedDay:'')+'</span>':'')+'</div></div>'+
+      '<div class="ct-right"><div class="ct-h">'+(c.timeOnSite||1)+'h</div><div class="ct-fr">'+c.freq+'x/yr</div></div>';
+    row.onclick=(function(ct){return function(){openContractDetail(ct);};})(c);
+    el.appendChild(row);
+  });
+}
+
+function openContractDetail(c){
+  var tech=EMP[c.tech];var d=daysUntil(c.nextVisit);
+  document.getElementById('mo-job-title').textContent=c.company;
+  var body='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Next visit</div><div style="font-size:13px;font-weight:600;color:'+(d<0?'#f87171':d<=7?'#fbbf24':'#4ade80')+'">'+fmtDate(c.nextVisit)+(d===0?' (today)':d<0?' ('+Math.abs(d)+'d overdue)':'')+'</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Technician</div><div style="font-size:13px;font-weight:600;">'+(tech?tech.name:'Unassigned')+'</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">On site</div><div style="font-size:13px;font-weight:600;color:var(--ac);">'+(c.timeOnSite||1)+'h</div></div>';
+  body+='<div style="background:var(--bg3);border-radius:8px;padding:10px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Frequency</div><div style="font-size:13px;font-weight:600;">'+c.freq+'x / year</div></div>';
+  body+='</div>';
+  if(c.address)body+='<div style="font-size:13px;color:var(--muted);margin-bottom:6px">📍 '+c.address+'</div>';
+  if(c.phone)body+='<div style="font-size:13px;color:var(--muted);margin-bottom:6px">📞 <a href="tel:'+c.phone+'" style="color:var(--ac)">'+c.phone+'</a></div>';
+  if(c.access)body+='<div style="background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.2);border-radius:7px;padding:8px 12px;font-size:12px;color:#fbbf24;margin-bottom:8px">🔑 '+c.access+'</div>';
+  if(c.confirmedTime||c.confirmedDay)body+='<div style="background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);border-radius:7px;padding:8px 12px;font-size:12px;color:#60a5fa">⏰ Confirmed: '+(c.confirmedTime||'')+(c.confirmedDay?' on '+c.confirmedDay:'')+'</div>';
+  document.getElementById('mo-job-body').innerHTML=body;
+  var footer=document.getElementById('mo-job-footer');footer.innerHTML='';
+  var closeBtn=document.createElement('button');closeBtn.className='btn btn-gr';closeBtn.textContent='Close';closeBtn.onclick=function(){closeMo('mo-job');};
+  var schedBtn=document.createElement('button');schedBtn.className='btn btn-g';schedBtn.textContent='Schedule this job';
+  schedBtn.onclick=(function(ct){return function(){closeMo('mo-job');openAddJobForDay(ct.tech,ct.nextVisit||new Date().toISOString().split('T')[0]);document.getElementById('aj-company').value=ct.company;selectAJCompany(ct.company,ct.id);};})(c);
+  footer.appendChild(closeBtn);footer.appendChild(schedBtn);
+  openMo('mo-job');
+}
+
+// ── ALERTS ────────────────────────────────────────────────────────────
+function checkAlerts(){
+  var today=new Date().toISOString().split('T')[0];
+  var issues=OUTCOMES.filter(function(o){return o&&o.date===today&&o.outcome!=='completed'&&o.outcome!=='done';});
+  var banner=document.getElementById('alert-banner');
+  if(banner&&issues.length){
+    banner.style.display='block';
+    banner.innerHTML='<strong>⚠️ '+issues.length+' job'+(issues.length!==1?'s':'')+' need attention today:</strong><br>'+issues.map(function(o){var lbl={no_access:'No access',client_absent:'Client absent',aborted:'Aborted',partial:'Partial'};return '&nbsp;&nbsp;• '+o.company+' ('+o.techName+') — '+(lbl[o.outcome]||o.outcome)+(o.notes?' — "'+o.notes+'"':'');}).join('<br>');
+  } else if(banner){banner.style.display='none';}
+}
+
+function renderAlerts(){
+  var el=document.getElementById('alerts-list');if(!el)return;
+  var all=ALERTS_DATA.concat(OUTCOMES.filter(function(o){return o&&o.outcome!=='completed'&&o.outcome!=='done';}));
+  if(!all.length){el.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No alerts — all good.</div>';return;}
+  el.innerHTML=all.map(function(a){return'<div style="display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd);"><div style="width:7px;height:7px;border-radius:50%;background:#f87171;flex-shrink:0;margin-top:5px;"></div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+(a.company||a.title||'Alert')+'</div><div style="font-size:11px;color:var(--muted)">'+(a.techName||'')+(a.outcome?' — '+a.outcome:'')+(a.notes?' — "'+a.notes+'"':'')+'</div></div><div style="font-size:10px;color:var(--muted)">'+fmtDate(a.date||a.ts)+'</div></div>';}).join('');
+}
+
+// ── LIVE TODAY ────────────────────────────────────────────────────────
+function loadLive(){
+  var el=document.getElementById('live-content');if(!el)return;
+  var today=new Date().toISOString().split('T')[0];
+  el.innerHTML='<div style="color:var(--muted)">Loading...</div>';
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  el.innerHTML='';
+  techs.forEach(function(t){
+    var safeId=(t.id||'').replace(/\W/g,'_');
+    fbR('pp_schedule_today_'+safeId,function(err,data){
+      var jobs=data&&data.date===today&&data.jobs?data.jobs:[];
+      var done=jobs.filter(function(j){return!j.isLunch&&j.status&&j.status!=='pending';}).length;
+      var total=jobs.filter(function(j){return!j.isLunch;}).length;
+      var card=document.createElement('div');
+      card.style.cssText='background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:10px;';
+      card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-size:14px;font-weight:700;">'+t.name+'</div><div style="font-size:12px;color:var(--muted);">'+done+'/'+total+' done</div></div>'+
+        '<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;"><div style="height:100%;width:'+Math.round((done/Math.max(total,1))*100)+'%;background:var(--ac);border-radius:3px;"></div></div>';
+      el.appendChild(card);
+    });
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+
+// ── SEND WEEK TO ALL TECHS ───────────────────────────────────────────
+function sendWeekToAll(){
+  var days=getWeekDays(weekOffset);
+  var techs=Object.values(EMP).filter(function(e){return e&&e.role==='technician'&&e.status==='active';});
+  var noEmail=techs.filter(function(t){return !t.email;});
+  if(noEmail.length){
+    if(!confirm(noEmail.map(function(t){return t.name;}).join(', ')+' have no email on file and will be skipped.\n\nSend to the rest?'))return;
+  }
+  var sent=0,skipped=0;
+  techs.forEach(function(tech){
+    if(!tech.email){skipped++;return;}
+    // Build full week email
+    var safeId=(tech.id||'').replace(/\W/g,'_');
+    var weekLabel=days[0].toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' – '+days[4].toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    var body='Hi '+tech.name.split(' ')[0]+',\n\nHere is your schedule for the week of '+weekLabel+':\n\n';
+    var totalJobs=0,totalH=0;
+    days.forEach(function(day){
+      var ds=day.toISOString().split('T')[0];
+      var dayLabel=day.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short'});
+      var jobs=(SCHEDULES[tech.id]&&SCHEDULES[tech.id][ds])||[];
+      var realJobs=jobs.filter(function(j){return!j.isLunch;});
+      body+=dayLabel.toUpperCase()+'\n';
+      if(!realJobs.length){body+='  Rest day\n\n';return;}
+      realJobs.forEach(function(j){
+        body+='  '+(j.scheduledTime||'TBC')+'  '+j.company+'\n';
+        if(j.address)body+='         '+j.address+'\n';
+        if(j.access)body+='         Access: '+j.access+'\n';
+        body+='         '+j.durationH+'h on site'+(j.driveFromPrev?' (~'+j.driveFromPrev+'min drive)':'')+'\n';
+      });
+      var dayH=realJobs.reduce(function(a,j){return a+(j.durationH||0);},0);
+      body+='  Day total: '+realJobs.length+' jobs, '+dayH+'h\n\n';
+      totalJobs+=realJobs.length;totalH+=dayH;
+    });
+    body+='WEEK TOTAL: '+totalJobs+' jobs, '+totalH+'h\n\nHave a great week!\nMarcus\nPest Proof — 0450 515 987';
+    // Open mailto (one per tech)
+    setTimeout(function(){
+      window.open('mailto:'+tech.email+'?subject='+encodeURIComponent('Your week schedule '+weekLabel+' — Pest Proof')+'&body='+encodeURIComponent(body));
+    }, sent * 500); // stagger so browser doesn't block
+    sent++;
+  });
+  sync('Opening emails for '+sent+' techs'+(skipped?' ('+skipped+' skipped — no email)':''));
+}
+
+window.addEventListener('load',function(){
+  EMP=SEED_EMPLOYEES;
+  CONTRACTS=SEED_CONTRACTS;
+  Object.values(EMP).filter(function(e){return e&&e.role==='technician';}).forEach(function(e){EXPANDED[e.id]=true;});
+  renderTechFilters();
+  updateWeekLabel();
+  loadAll();
+  var ab=document.getElementById('auto-btn');if(ab)ab.style.display='';
+  sync('107 contracts loaded — click Auto-schedule to build schedules');
+});
+
+</script>
+</body>
+</html>
